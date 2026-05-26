@@ -323,7 +323,7 @@ function renderOverview() {
   const dayTotals = DAYS.map(d => PLAYERS.reduce((s,p) => s + (S.rpeData[p][d]?.tl||0), 0));
   destroyC('tlWeekChart');
   charts.tlWeekChart = new Chart(document.getElementById('tlWeekChart'), {
-    type:'bar', data:{ labels:DAYS, datasets:[{ label:'TL', data:dayTotals, backgroundColor:'#1db876', borderRadius:5 }] },
+    type:'bar', data:{ labels:DAYS, datasets:[{ label:'TL', data:dayTotals, backgroundColor:'#8B1A1A', borderRadius:5 }] },
     options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
       scales:{ y:{ grid:{ color:'rgba(0,0,0,.05)' }, ticks:{ font:{ size:10 } } }, x:{ ticks:{ font:{ size:11 } } } } }
   });
@@ -332,7 +332,7 @@ function renderOverview() {
   destroyC('acwrChart');
   charts.acwrChart = new Chart(document.getElementById('acwrChart'), {
     type:'bar', data:{ labels:PLAYERS.map(p=>p.split(' ')[0]),
-      datasets:[{ label:'ACWR', data:acwrs, backgroundColor:acwrs.map(v=>v>1.3?'#ef4444':v<0.8?'#3b82f6':'#1db876'), borderRadius:4 }] },
+      datasets:[{ label:'ACWR', data:acwrs, backgroundColor:acwrs.map(v=>v>1.3?'#ef4444':v<0.8?'#3b82f6':'#8B1A1A'), borderRadius:4 }] },
     options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
       scales:{ y:{ min:0, max:2, ticks:{ font:{ size:10 } } }, x:{ ticks:{ font:{ size:9 } } } } }
   });
@@ -375,9 +375,9 @@ function renderRPE() {
   charts.rpeChart = new Chart(document.getElementById('rpeChart'), {
     type:'bar',
     data:{ labels:DAYS, datasets:[
-      { label:'TL', data:DAYS.map(d=>data[d]?.tl||0), backgroundColor:'#1db876', borderRadius:4, yAxisID:'y' },
-      { label:'RPE', data:DAYS.map(d=>data[d]?.rpe||0), type:'line', borderColor:'#3b82f6',
-        backgroundColor:'rgba(59,130,246,.08)', tension:0.35, fill:true, yAxisID:'y1', pointRadius:4 }
+      { label:'TL', data:DAYS.map(d=>data[d]?.tl||0), backgroundColor:'#8B1A1A', borderRadius:4, yAxisID:'y' },
+      { label:'RPE', data:DAYS.map(d=>data[d]?.rpe||0), type:'line', borderColor:'#F5A800',
+        backgroundColor:'rgba(245,168,0,.08)', tension:0.35, fill:true, yAxisID:'y1', pointRadius:4 }
     ]},
     options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
       scales:{
@@ -469,8 +469,8 @@ function renderWellness() {
   charts.wellChart = new Chart(document.getElementById('wellChart'), {
     type:'line',
     data:{ labels:['Lun','Mar','Mer','Gio','Ven','Sab','Dom'], datasets:[
-      { label:'HI', data:hi7, borderColor:'#1db876', backgroundColor:'rgba(29,184,118,.08)', fill:true, tension:0.35, pointRadius:4 },
-      { label:'Soglia', data:[20,20,20,20,20,20,20], borderColor:'#ef4444', borderDash:[5,3], pointRadius:0 }
+      { label:'HI', data:hi7, borderColor:'#8B1A1A', backgroundColor:'rgba(139,26,26,.08)', fill:true, tension:0.35, pointRadius:4 },
+      { label:'Soglia', data:[20,20,20,20,20,20,20], borderColor:'#dc2626', borderDash:[5,3], pointRadius:0 }
     ]},
     options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
       scales:{ y:{ min:0, max:35, ticks:{ font:{ size:10 } } }, x:{ ticks:{ font:{ size:11 } } } } }
@@ -509,7 +509,7 @@ function renderGPS() {
   destroyC('gpsDistChart');
   charts.gpsDistChart = new Chart(document.getElementById('gpsDistChart'), {
     type:'bar', data:{ labels:d.map(x=>x.p.split(' ')[0]),
-      datasets:[{ label:'Dist.', data:d.map(x=>x.dist), backgroundColor:'#1db876', borderRadius:3 }] },
+      datasets:[{ label:'Dist.', data:d.map(x=>x.dist), backgroundColor:'#8B1A1A', borderRadius:3 }] },
     options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
       scales:{ x:{ ticks:{ font:{ size:9 } }, grid:{ color:'rgba(0,0,0,.05)' } }, y:{ ticks:{ font:{ size:9 } } } } }
   });
@@ -610,7 +610,7 @@ function renderACWR() {
   charts.acwrPlayerChart = new Chart(document.getElementById('acwrPlayerChart'), {
     type:'bar', data:{ labels:PLAYERS.map(p=>p.split(' ')[0]),
       datasets:[{ label:'ACWR', data:acwrs,
-        backgroundColor:acwrs.map(v=>v>1.3?'#ef4444':v<0.8?'#3b82f6':'#1db876'), borderRadius:4 }] },
+        backgroundColor:acwrs.map(v=>v>1.3?'#ef4444':v<0.8?'#3b82f6':'#8B1A1A'), borderRadius:4 }] },
     options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
       scales:{ y:{ min:0, max:2, ticks:{ font:{ size:10 } } }, x:{ ticks:{ font:{ size:9 } } } } }
   });
@@ -618,7 +618,7 @@ function renderACWR() {
   document.getElementById('pctBars').innerHTML = PLAYERS.map(p => {
     const tl  = getTL(p);
     const pct = rnd(tl / tot * 100, 1);
-    const clr = pct>10?'#ef4444':pct>7?'#f59e0b':'#1db876';
+    const clr = pct>10?'#ef4444':pct>7?'#f59e0b':'#8B1A1A';
     return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12px">
       <span style="min-width:85px;color:var(--gray-700)">${p}</span>
       <div class="pct-bar"><div class="pct-fill" style="width:${Math.min(pct*6,100)}%;background:${clr}"></div></div>
@@ -681,7 +681,7 @@ function renderPlayer() {
   charts.playerTLChart = new Chart(document.getElementById('playerTLChart'), {
     type:'line', data:{ labels:DAYS,
       datasets:[{ label:'TL', data:DAYS.map(day=>d[day]?.tl||0),
-        borderColor:'#1db876', backgroundColor:'rgba(29,184,118,.08)', fill:true, tension:0.4, pointRadius:4 }] },
+        borderColor:'#8B1A1A', backgroundColor:'rgba(139,26,26,.08)', fill:true, tension:0.4, pointRadius:4 }] },
     options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false } },
       scales:{ y:{ ticks:{ font:{ size:10 } }, grid:{ color:'rgba(0,0,0,.05)' } }, x:{ ticks:{ font:{ size:11 } } } } }
   });
@@ -690,8 +690,8 @@ function renderPlayer() {
   charts.playerWellChart = new Chart(document.getElementById('playerWellChart'), {
     type:'radar', data:{ labels:WLBLS,
       datasets:[{ label:p, data:WDIMS.map(k=>w[k]),
-        borderColor:'#1db876', backgroundColor:'rgba(29,184,118,.12)',
-        pointBackgroundColor:'#1db876', pointRadius:4 }] },
+        borderColor:'#8B1A1A', backgroundColor:'rgba(139,26,26,.12)',
+        pointBackgroundColor:'#8B1A1A', pointRadius:4 }] },
     options:{ responsive:true, maintainAspectRatio:false,
       scales:{ r:{ min:0, max:7, ticks:{ stepSize:1, font:{ size:9 } },
         grid:{ color:'rgba(0,0,0,.08)' }, angleLines:{ color:'rgba(0,0,0,.08)' } } },
