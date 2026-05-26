@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Ravenna FC – Monitoraggio Atletico Stagione 2026/27">
+<meta name="theme-color" content="#0f4c35">
+<title>Ravenna FC · Monitoraggio Atletico</title>
+
+<!-- PWA manifest inline -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f4c35'/><text y='.9em' font-size='80' x='10'>⚽</text></svg>">
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<!-- PapaParse -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<!-- SheetJS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════
+   RESET & TOKENS
+═══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green:    #1db876;
+  --green-d:  #0f4c35;
+  --green-l:  #e6f7ef;
+  --green-m:  #0d8a52;
+  --amber:    #f59e0b;
+  --amber-l:  #fef3c7;
+  --red:      #ef4444;
+  --red-l:    #fee2e2;
+  --blue:     #3b82f6;
+  --blue-l:   #eff6ff;
+  --gray-50:  #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-700: #374151;
+  --gray-900: #111827;
+  --white:    #ffffff;
+  --sidebar-w: 220px;
+  --header-h:  56px;
+  --radius:    10px;
+  --shadow:    0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md: 0 4px 6px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.06);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  color: var(--gray-900);
+  background: var(--gray-50);
+}
+
+/* ═══════════════════════════════════════════
+   LAYOUT SHELL
+═══════════════════════════════════════════ */
+body { display: flex; min-height: 100vh; overflow-x: hidden; }
+
+/* ── Sidebar ── */
+#sidebar {
+  width: var(--sidebar-w);
+  background: var(--green-d);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  transition: transform .25s ease;
+}
+
+.sidebar-logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+.sidebar-logo .club {
+  font-family: 'Syne', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--green);
+  letter-spacing: .5px;
+  display: block;
+}
+.sidebar-logo .season {
+  font-size: 10px;
+  color: rgba(255,255,255,.45);
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  margin-top: 2px;
+  display: block;
+}
+
+.sidebar-nav { flex: 1; padding: 12px 8px; overflow-y: auto; }
+
+.nav-section {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: rgba(255,255,255,.3);
+  padding: 12px 10px 4px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: rgba(255,255,255,.65);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 400;
+  transition: all .15s;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  margin-bottom: 1px;
+}
+.nav-item i { font-size: 16px; flex-shrink: 0; }
+.nav-item:hover { background: rgba(255,255,255,.08); color: #fff; }
+.nav-item.active {
+  background: var(--green);
+  color: var(--green-d);
+  font-weight: 600;
+}
+.nav-item.active i { color: var(--green-d); }
+
+.sidebar-footer {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255,255,255,.1);
+  font-size: 10px;
+  color: rgba(255,255,255,.3);
+}
+.sidebar-footer strong { color: rgba(255,255,255,.5); display: block; margin-bottom: 2px; }
+
+/* ── Main content ── */
+#main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── Topbar ── */
+#topbar {
+  height: var(--header-h);
+  background: var(--white);
+  border-bottom: 1px solid var(--gray-200);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  gap: 16px;
+}
+.topbar-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+
+.sync-indicator {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--gray-500);
+  background: var(--gray-100);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.sync-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gray-400);
+  transition: background .3s;
+}
+.sync-dot.ok   { background: var(--green); }
+.sync-dot.wait { background: var(--amber); }
+
+.btn-sync {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--green);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: background .15s;
+}
+.btn-sync:hover { background: var(--green-m); }
+.btn-sync:disabled { opacity: .6; pointer-events: none; }
+
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--gray-700);
+  font-size: 22px;
+  padding: 4px;
+}
+
+/* ── Page content ── */
+#content { flex: 1; padding: 24px; overflow-y: auto; }
+
+.page { display: none; }
+.page.active { display: block; }
+
+/* ═══════════════════════════════════════════
+   COMPONENTS
+═══════════════════════════════════════════ */
+
+/* KPI Grid */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.kpi-card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  border-left: 3px solid transparent;
+  box-shadow: var(--shadow);
+}
+.kpi-card.c-green { border-left-color: var(--green); }
+.kpi-card.c-amber { border-left-color: var(--amber); }
+.kpi-card.c-red   { border-left-color: var(--red); }
+.kpi-card.c-blue  { border-left-color: var(--blue); }
+.kpi-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  color: var(--gray-500);
+  margin-bottom: 6px;
+}
+.kpi-value {
+  font-family: 'DM Mono', monospace;
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--gray-900);
+  line-height: 1;
+}
+.kpi-sub {
+  font-size: 10px;
+  color: var(--gray-400);
+  margin-top: 4px;
+}
+
+/* Card */
+.card {
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow);
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gray-700);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.card-title-icon {
+  font-size: 16px;
+  color: var(--green);
+}
+
+/* Grid 2 col */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+@media (max-width: 860px) { .grid-2 { grid-template-columns: 1fr; } }
+
+/* Chart wrapper */
+.chart-wrap { position: relative; width: 100%; }
+
+/* Table */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+}
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th {
+  background: var(--gray-50);
+  padding: 8px 12px;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--gray-500);
+  border-bottom: 1px solid var(--gray-200);
+  white-space: nowrap;
+}
+tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--gray-100);
+  color: var(--gray-700);
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--gray-50); }
+
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.badge-green { background: #dcfce7; color: #166534; }
+.badge-amber { background: var(--amber-l); color: #92400e; }
+.badge-red   { background: var(--red-l); color: #991b1b; }
+.badge-blue  { background: var(--blue-l); color: #1e40af; }
+.badge-gray  { background: var(--gray-100); color: var(--gray-500); }
+.badge-live  { background: #d1fae5; color: #065f46; }
+.badge-manual{ background: #dbeafe; color: #1e3a8a; }
+
+/* Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  border: 1px solid var(--gray-200);
+  background: var(--white);
+  color: var(--gray-700);
+  transition: all .15s;
+}
+.btn:hover { background: var(--gray-50); border-color: var(--gray-300); }
+.btn-primary {
+  background: var(--green);
+  color: #fff;
+  border-color: var(--green);
+}
+.btn-primary:hover { background: var(--green-m); border-color: var(--green-m); }
+
+/* Form */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.form-group label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--gray-500);
+  margin-bottom: 4px;
+}
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--gray-200);
+  border-radius: 7px;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--gray-900);
+  background: var(--white);
+  outline: none;
+  transition: border-color .15s;
+}
+.form-group input:focus,
+.form-group select:focus { border-color: var(--green); }
+
+/* Wellness stars */
+.w-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.w-item {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-100);
+  border-radius: 8px;
+  padding: 10px 8px;
+  text-align: center;
+}
+.w-item label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--gray-400);
+  display: block;
+  margin-bottom: 6px;
+}
+.stars { display: flex; justify-content: center; gap: 2px; }
+.star {
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--gray-300);
+  transition: color .08s;
+  user-select: none;
+}
+.star.on { color: #f59e0b; }
+.w-lbl { font-size: 9px; color: var(--gray-400); margin-top: 4px; }
+
+/* Drop zone */
+.drop-zone {
+  border: 2px dashed var(--gray-300);
+  border-radius: 10px;
+  padding: 28px 20px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+  transition: all .15s;
+  margin-bottom: 12px;
+}
+.drop-zone input[type=file] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+.drop-zone:hover,
+.drop-zone.drag { border-color: var(--green); background: var(--green-l); }
+.drop-zone.ok   { border-color: var(--green); border-style: solid; background: var(--green-l); }
+.drop-zone.err  { border-color: var(--red); border-style: solid; background: var(--red-l); }
+.drop-icon { font-size: 28px; color: var(--gray-400); }
+.drop-title { font-size: 14px; font-weight: 600; margin: 6px 0 3px; color: var(--gray-700); }
+.drop-sub { font-size: 11px; color: var(--gray-400); }
+.drop-status { font-size: 11px; margin-top: 8px; min-height: 18px; }
+
+/* Col map */
+.col-map-row {
+  display: grid;
+  grid-template-columns: 1fr 20px 1fr;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+  font-size: 11px;
+}
+.col-map-row select {
+  font-size: 11px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--gray-200);
+  background: var(--white);
+  color: var(--gray-700);
+  width: 100%;
+}
+
+/* HI bar */
+.hi-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; font-size: 11px; }
+.hi-bar-fill { height: 8px; border-radius: 4px; min-width: 2px; }
+.pct-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--gray-100); overflow: hidden; }
+.pct-fill { height: 100%; border-radius: 3px; }
+
+/* Sheet panel */
+.sheet-panel {
+  border: 1px solid var(--green);
+  background: var(--green-l);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+}
+.sheet-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.sheet-row input {
+  flex: 1;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px solid var(--gray-200);
+  background: var(--white);
+  color: var(--gray-700);
+}
+.sheet-info { font-size: 11px; color: var(--green-d); line-height: 1.7; margin-top: 6px; }
+
+/* Page header */
+.page-header { margin-bottom: 20px; }
+.page-header h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--gray-900);
+}
+.page-header p { font-size: 13px; color: var(--gray-500); margin-top: 3px; }
+
+/* Info strip */
+.info-strip {
+  background: var(--green-l);
+  border: 1px solid #a7f3d0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 11px;
+  color: var(--green-d);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+/* Src tags */
+.src-live   { background: #d1fae5; color: #065f46; font-size: 9px; padding: 1px 5px; border-radius: 4px; font-weight: 700; }
+.src-manual { background: #dbeafe; color: #1e3a8a; font-size: 9px; padding: 1px 5px; border-radius: 4px; font-weight: 700; }
+.src-demo   { background: var(--gray-100); color: var(--gray-400); font-size: 9px; padding: 1px 5px; border-radius: 4px; font-weight: 700; }
+
+/* Tab pills */
+.tab-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.tab-pill {
+  padding: 5px 13px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--gray-200);
+  background: var(--white);
+  color: var(--gray-500);
+  cursor: pointer;
+  transition: all .12s;
+}
+.tab-pill.active {
+  background: var(--green-d);
+  border-color: var(--green-d);
+  color: #fff;
+}
+
+/* Spinner */
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin .7s linear infinite; display: inline-block; }
+
+/* Overlay mobile */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 90;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  #sidebar { transform: translateX(-100%); }
+  #sidebar.open { transform: translateX(0); }
+  #main { margin-left: 0; }
+  .mobile-menu-btn { display: block; }
+  .sidebar-overlay.open { display: block; }
+  #content { padding: 16px; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .topbar-title { font-size: 14px; }
+}
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr 1fr; }
+  .form-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Sidebar overlay (mobile) -->
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- ── SIDEBAR ── -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <span class="club">RAVENNA FC</span>
+    <span class="season">Monitoraggio Atletico 2026/27</span>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="nav-section">Principale</div>
+    <button class="nav-item active" onclick="showPage('overview',this)">
+      <i class="ti ti-layout-dashboard"></i> Overview
+    </button>
+    <button class="nav-item" onclick="showPage('sync',this)">
+      <i class="ti ti-brand-google-drive"></i> Google Forms
+    </button>
+
+    <div class="nav-section">Dati</div>
+    <button class="nav-item" onclick="showPage('rpe',this)">
+      <i class="ti ti-activity"></i> RPE & Training Load
+    </button>
+    <button class="nav-item" onclick="showPage('wellness',this)">
+      <i class="ti ti-heart-rate-monitor"></i> Wellness
+    </button>
+    <button class="nav-item" onclick="showPage('gps',this)">
+      <i class="ti ti-map-pin"></i> GPS
+    </button>
+    <button class="nav-item" onclick="showPage('fc',this)">
+      <i class="ti ti-heart"></i> Frequenza Cardiaca
+    </button>
+
+    <div class="nav-section">Analisi</div>
+    <button class="nav-item" onclick="showPage('acwr',this)">
+      <i class="ti ti-chart-line"></i> ACWR & Indici
+    </button>
+    <button class="nav-item" onclick="showPage('players',this)">
+      <i class="ti ti-users"></i> Giocatori
+    </button>
+
+    <div class="nav-section">Strumenti</div>
+    <button class="nav-item" onclick="showPage('import',this)">
+      <i class="ti ti-upload"></i> Import GPS / FC
+    </button>
+  </div>
+
+  <div class="sidebar-footer">
+    <strong>Ravenna FC · Staff Tecnico</strong>
+    v1.0 · 2026/27
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<div id="main">
+
+  <!-- Topbar -->
+  <header id="topbar">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="mobile-menu-btn" onclick="toggleSidebar()">
+        <i class="ti ti-menu-2"></i>
+      </button>
+      <span class="topbar-title" id="topbarTitle">Overview</span>
+    </div>
+    <div class="topbar-right">
+      <div class="sync-indicator">
+        <span class="sync-dot" id="dotRPE"></span> RPE
+        <span class="sync-dot" id="dotWell" style="margin-left:6px"></span> Wellness
+      </div>
+      <span style="font-size:10px;color:var(--gray-400)" id="lastSync">—</span>
+      <button class="btn-sync" onclick="syncAll()" id="syncBtn">
+        <i class="ti ti-refresh"></i> Sincronizza
+      </button>
+    </div>
+  </header>
+
+  <!-- Content -->
+  <main id="content">
+
+    <!-- ═══ OVERVIEW ═══ -->
+    <div id="overview" class="page active">
+      <div class="page-header">
+        <h1>Overview squadra</h1>
+        <p>Riepilogo settimanale — Training Load, ACWR e Wellness</p>
+      </div>
+      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <i class="ti ti-chart-bar card-title-icon"></i>
+            <span class="card-title">TL giornaliero squadra</span>
+          </div>
+          <div class="chart-wrap" style="height:190px">
+            <canvas id="tlWeekChart" role="img" aria-label="Training Load per giorno"></canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <i class="ti ti-chart-bar card-title-icon"></i>
+            <span class="card-title">ACWR per atleta</span>
+            <span class="badge badge-gray" style="margin-left:auto;font-size:9px">ottimale 0.8–1.3</span>
+          </div>
+          <div class="chart-wrap" style="height:190px">
+            <canvas id="acwrChart" role="img" aria-label="ACWR per atleta"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <i class="ti ti-users card-title-icon"></i>
+          <span class="card-title">Stato atleti</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Atleta</th><th>Fonte RPE</th><th>RPE med.</th><th>TL sett.</th><th>ACWR</th><th>HI /35</th><th>Rischio</th></tr></thead>
+            <tbody id="statusBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ GOOGLE FORMS ═══ -->
+    <div id="sync" class="page">
+      <div class="page-header">
+        <h1>Google Forms</h1>
+        <p>Collegamento e sincronizzazione automatica RPE e Wellness</p>
+      </div>
+
+      <div class="sheet-panel">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <i class="ti ti-brand-google-drive" style="font-size:20px;color:var(--green-d)"></i>
+          <strong style="font-size:14px;color:var(--green-d)">Foglio RPE — Forms Ravenna FC 2026/27</strong>
+          <span id="rpeBadge" class="badge badge-gray" style="margin-left:auto">Non connesso</span>
+        </div>
+        <div style="font-size:11px;color:var(--green-d);margin-bottom:10px;line-height:1.7">
+          <strong>Col. A</strong> = Data/ora &nbsp;·&nbsp; <strong>Col. B</strong> = Nome Cognome &nbsp;·&nbsp; <strong>Col. C</strong> = RPE (0–10, scala Foster CR10)<br>
+          I <strong>minuti</strong> vengono letti automaticamente dai dati GPS della stessa sessione.
+        </div>
+        <div class="sheet-row">
+          <span class="sync-dot" id="dotRPE2"></span>
+          <input type="text" id="rpeUrl" value="https://docs.google.com/spreadsheets/d/1CgUuCPakmhgif-cIJI0PSeFqvFQy-QBFldpGfr9A1KE/edit?usp=sharing" placeholder="URL Google Sheets RPE">
+          <button class="btn btn-primary" onclick="connectRPE()"><i class="ti ti-plug"></i> Collega</button>
+        </div>
+        <div id="rpeConnInfo" class="sheet-info" style="display:none">
+          ✓ Foglio collegato — premi Sincronizza per leggere le risposte.<br>
+          <span style="color:var(--amber)">⚠ Foglio attualmente vuoto. I dati appariranno quando i giocatori compilano il modulo.</span>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(0,0,0,.08)">
+          <div style="font-size:11px;font-weight:700;color:var(--green-d);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Sessione corrente</div>
+          <div class="form-grid">
+            <div class="form-group"><label>Tipo sessione</label><select id="sessType"><option>Allenamento</option><option>Partita</option><option>Amichevole</option><option>Test fisico</option></select></div>
+            <div class="form-group"><label>Data</label><input type="date" id="sessDate"></div>
+            <div class="form-group"><label>Giorno MD</label><select id="sessMD"><option>MD+1</option><option>MD+2</option><option>MD+3</option><option>MD-3</option><option>MD-2</option><option>MD-1</option><option>MD</option></select></div>
+          </div>
+          <button class="btn btn-primary" onclick="applySess()"><i class="ti ti-check"></i> Imposta sessione</button>
+          <p style="font-size:10px;color:var(--green-d);margin-top:6px">Al prossimo Sincronizza, le risposte RPE saranno attribuite a questa sessione e MD.</p>
+        </div>
+      </div>
+
+      <div class="sheet-panel">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <i class="ti ti-brand-google-drive" style="font-size:20px;color:var(--green-d)"></i>
+          <strong style="font-size:14px;color:var(--green-d)">Foglio Wellness — Forms Ravenna FC 2026/27</strong>
+          <span id="wellBadge" class="badge badge-gray" style="margin-left:auto">Non connesso</span>
+        </div>
+        <div style="font-size:11px;color:var(--green-d);margin-bottom:10px;line-height:1.7">
+          <strong>Col. A</strong>=Data/ora &nbsp;·&nbsp; <strong>Col. B</strong>=Nome &nbsp;·&nbsp;
+          <strong>Col. C</strong>=Sonno &nbsp;·&nbsp; <strong>Col. D</strong>=Dolori &nbsp;·&nbsp;
+          <strong>Col. E</strong>=Stanchezza &nbsp;·&nbsp; <strong>Col. F</strong>=Stress &nbsp;·&nbsp;
+          <strong>Col. G</strong>=Motivazione &nbsp;|&nbsp; Scala 1–7
+        </div>
+        <div class="sheet-row">
+          <span class="sync-dot" id="dotWell2"></span>
+          <input type="text" id="wellUrl" value="https://docs.google.com/spreadsheets/d/1pOCUqz8usBdnt18N08Nd2XjMDgaxFN2FIu2HfPKAGqY/edit?usp=sharing" placeholder="URL Google Sheets Wellness">
+          <button class="btn btn-primary" onclick="connectWell()"><i class="ti ti-plug"></i> Collega</button>
+        </div>
+        <div id="wellConnInfo" class="sheet-info" style="display:none">
+          ✓ Foglio collegato — premi Sincronizza per leggere le risposte.<br>
+          <span style="color:var(--amber)">⚠ Foglio attualmente vuoto. I dati appariranno quando i giocatori compilano il modulo.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><i class="ti ti-history card-title-icon"></i><span class="card-title">Log sincronizzazioni</span></div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Data/ora</th><th>Fonte</th><th>Atleti aggiornati</th><th>Stato</th></tr></thead>
+          <tbody id="syncLog"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ RPE & TL ═══ -->
+    <div id="rpe" class="page">
+      <div class="page-header"><h1>RPE & Training Load</h1><p>Scala Foster CR10 (0–10) · TL = RPE × Minuti GPS</p></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+        <div class="form-group" style="margin:0"><label>Giocatore</label>
+          <select id="rpePlayer" onchange="renderRPE()" style="padding:6px 10px;border:1px solid var(--gray-200);border-radius:7px;font-size:12px;background:var(--white)"></select>
+        </div>
+        <div style="font-size:10px;color:var(--gray-500);display:flex;gap:8px;align-items:center;margin-top:14px">
+          <span class="src-live">● live</span> da Forms &nbsp;
+          <span class="src-manual">● man</span> manuale &nbsp;
+          <span class="src-demo">● demo</span> esempio
+        </div>
+      </div>
+      <div class="kpi-grid" id="rpeKpi"></div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-pencil card-title-icon"></i><span class="card-title">Inserimento manuale RPE</span></div>
+        <div class="info-strip">I minuti vengono presi automaticamente dal GPS. Se il GPS non è disponibile, inseriscili manualmente.</div>
+        <div class="form-grid">
+          <div class="form-group"><label>Giocatore</label><select id="inp_player"></select></div>
+          <div class="form-group"><label>Giorno MD</label><select id="inp_md"><option>MD+1</option><option>MD+2</option><option>MD+3</option><option>MD-3</option><option>MD-2</option><option>MD-1</option><option>MD</option></select></div>
+          <div class="form-group"><label>RPE (0–10)</label><input type="number" id="inp_rpe" min="0" max="10" step="0.5" placeholder="es. 7.5"></div>
+          <div class="form-group"><label>Minuti (opz.)</label><input type="number" id="inp_min" min="0" max="200" placeholder="auto da GPS"></div>
+        </div>
+        <button class="btn btn-primary" onclick="addRPE()"><i class="ti ti-plus"></i> Aggiungi sessione</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-chart-bar card-title-icon"></i><span class="card-title">RPE & TL per sessione</span></div>
+        <div class="chart-wrap" style="height:220px"><canvas id="rpeChart" role="img" aria-label="RPE e TL per sessione"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-table card-title-icon"></i><span class="card-title">Tabella RPE settimanale — tutti gli atleti</span></div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Atleta</th><th>Fonte</th><th>MD+1</th><th>MD+2</th><th>MD+3</th><th>MD-3</th><th>MD-2</th><th>MD-1</th><th>MD</th><th>TL Tot.</th><th>RPE med.</th><th>Monotonia</th><th>Fatica</th></tr></thead>
+          <tbody id="rpeTableBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ WELLNESS ═══ -->
+    <div id="wellness" class="page">
+      <div class="page-header"><h1>Wellness</h1><p>5 dimensioni Ravenna FC · Scala 1 (ottimo) → 7 (pessimo) · HI max 35</p></div>
+      <div class="info-strip">
+        <strong>Dimensioni monitorate:</strong> Sonno · Dolori muscolari · Stanchezza fisica · Stress · Motivazione
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px">
+        <div class="form-group" style="margin:0"><label>Giocatore</label>
+          <select id="wellPlayer" onchange="renderWellness()" style="padding:6px 10px;border:1px solid var(--gray-200);border-radius:7px;font-size:12px;background:var(--white)"></select>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-pencil card-title-icon"></i><span class="card-title">Inserimento manuale wellness</span></div>
+        <div style="font-size:11px;color:var(--gray-500);margin-bottom:10px">Atleta: <strong id="wellPlayerLabel">—</strong></div>
+        <div class="w-grid">
+          <div class="w-item"><label>Sonno</label><div class="stars" id="st_sleep"></div><div class="w-lbl" id="lbl_sleep">—</div></div>
+          <div class="w-item"><label>Dolori musc.</label><div class="stars" id="st_muscle"></div><div class="w-lbl" id="lbl_muscle">—</div></div>
+          <div class="w-item"><label>Stanchezza</label><div class="stars" id="st_fatigue"></div><div class="w-lbl" id="lbl_fatigue">—</div></div>
+          <div class="w-item"><label>Stress</label><div class="stars" id="st_stress"></div><div class="w-lbl" id="lbl_stress">—</div></div>
+          <div class="w-item"><label>Motivazione</label><div class="stars" id="st_motivation"></div><div class="w-lbl" id="lbl_motivation">—</div></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <span style="font-size:13px;color:var(--gray-700)">Hooper Index: <strong id="hooperVal" style="font-family:'DM Mono',monospace;font-size:16px">—</strong> / 35</span>
+          <button class="btn btn-primary" onclick="saveWellness()"><i class="ti ti-device-floppy"></i> Salva</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-chart-line card-title-icon"></i><span class="card-title">Trend Wellness settimanale</span></div>
+        <div class="chart-wrap" style="height:220px"><canvas id="wellChart" role="img" aria-label="Trend HI settimanale"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-table card-title-icon"></i><span class="card-title">Wellness squadra</span></div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Atleta</th><th>Fonte</th><th>Sonno</th><th>Dolori</th><th>Stanchezza</th><th>Stress</th><th>Motivazione</th><th>HI /35</th><th>Stato</th></tr></thead>
+          <tbody id="wellBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ GPS ═══ -->
+    <div id="gps" class="page">
+      <div class="page-header"><h1>GPS</h1><p>Carico Esterno · I minuti GPS alimentano il calcolo TL = RPE × min</p></div>
+      <div class="kpi-grid" id="gpsKpi"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><i class="ti ti-ruler card-title-icon"></i><span class="card-title">Distanza per atleta</span></div>
+          <div class="chart-wrap" style="height:240px"><canvas id="gpsDistChart" role="img" aria-label="Distanza GPS per atleta"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><i class="ti ti-run card-title-icon"></i><span class="card-title">HSR per atleta</span></div>
+          <div class="chart-wrap" style="height:240px"><canvas id="gpsHSRChart" role="img" aria-label="HSR per atleta"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-table card-title-icon"></i><span class="card-title">Report GPS completo</span></div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Atleta</th><th>Dist. (m)</th><th>Dist/min</th><th>&gt;16km/h</th><th>&gt;20km/h</th><th>&gt;25km/h</th><th>Acc. dist</th><th>Dec. dist</th><th>N° Acc</th><th>Vel MAX</th><th>RPE</th><th>Min → TL</th></tr></thead>
+          <tbody id="gpsBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ FC ═══ -->
+    <div id="fc" class="page">
+      <div class="page-header"><h1>Frequenza Cardiaca</h1><p>Metodo Edwards · TL FC = Z1×1 + Z2×2 + Z3×3 + Z4×4 + Z5×5</p></div>
+      <div class="kpi-grid" id="fcKpi"></div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-pencil card-title-icon"></i><span class="card-title">Inserimento manuale FC</span></div>
+        <div class="form-grid">
+          <div class="form-group"><label>Atleta</label><select id="fc_player"></select></div>
+          <div class="form-group"><label>Z5 (90-100%) min</label><input type="number" id="fc_z5" min="0" placeholder="0"></div>
+          <div class="form-group"><label>Z4 (80-90%) min</label><input type="number" id="fc_z4" min="0" placeholder="0"></div>
+          <div class="form-group"><label>Z3 (70-80%) min</label><input type="number" id="fc_z3" min="0" placeholder="0"></div>
+          <div class="form-group"><label>Z2 (60-70%) min</label><input type="number" id="fc_z2" min="0" placeholder="0"></div>
+          <div class="form-group"><label>Z1 (50-60%) min</label><input type="number" id="fc_z1" min="0" placeholder="0"></div>
+        </div>
+        <button class="btn btn-primary" onclick="addFC()"><i class="ti ti-plus"></i> Aggiungi</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-chart-bar card-title-icon"></i><span class="card-title">Zone FC per atleta</span></div>
+        <div style="display:flex;gap:10px;font-size:10px;color:var(--gray-500);margin-bottom:8px;flex-wrap:wrap">
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#ef4444;margin-right:3px"></span>Z5</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#f59e0b;margin-right:3px"></span>Z4</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#22c55e;margin-right:3px"></span>Z3</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#3b82f6;margin-right:3px"></span>Z2</span>
+          <span><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:#a855f7;margin-right:3px"></span>Z1</span>
+        </div>
+        <div class="chart-wrap" style="height:220px"><canvas id="fcChart" role="img" aria-label="Zone FC per atleta"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-table card-title-icon"></i><span class="card-title">Tabella TL Frequenza Cardiaca</span></div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Atleta</th><th>Z5</th><th>Z4</th><th>Z3</th><th>Z2</th><th>Z1</th><th>TL FC (UA)</th></tr></thead>
+          <tbody id="fcBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ ACWR ═══ -->
+    <div id="acwr" class="page">
+      <div class="page-header"><h1>ACWR & Indici</h1><p>Acuto (7gg) / Cronico (28gg) · Monotonia · Fatica · % Carico individuale</p></div>
+      <div class="kpi-grid" id="acwrKpi"></div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-chart-bar card-title-icon"></i><span class="card-title">ACWR per atleta</span></div>
+        <div class="chart-wrap" style="height:230px"><canvas id="acwrPlayerChart" role="img" aria-label="ACWR per atleta"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-percentage card-title-icon"></i><span class="card-title">% Carico individuale sul totale squadra</span></div>
+        <div id="pctBars"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-table card-title-icon"></i><span class="card-title">Tabella indici completi</span></div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Atleta</th><th>TL Acuto 7gg</th><th>TL Cronico 28gg</th><th>ACWR</th><th>Media TL/die</th><th>Dev. Std.</th><th>Monotonia</th><th>Fatica</th><th>% Carico</th><th>Rischio</th></tr></thead>
+          <tbody id="acwrBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ GIOCATORI ═══ -->
+    <div id="players" class="page">
+      <div class="page-header"><h1>Schede Giocatori</h1><p>Profilo individuale completo per ogni atleta</p></div>
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:16px">
+        <div class="form-group" style="margin:0"><label>Atleta</label>
+          <select id="playerSel" onchange="renderPlayer()" style="padding:6px 10px;border:1px solid var(--gray-200);border-radius:7px;font-size:12px;background:var(--white)"></select>
+        </div>
+      </div>
+      <div class="kpi-grid" id="playerKpi"></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><i class="ti ti-chart-line card-title-icon"></i><span class="card-title">TL settimanale</span></div>
+          <div class="chart-wrap" style="height:200px"><canvas id="playerTLChart" role="img" aria-label="TL atleta"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><i class="ti ti-radar card-title-icon"></i><span class="card-title">Wellness radar (5 dim.)</span></div>
+          <div class="chart-wrap" style="height:200px"><canvas id="playerWellChart" role="img" aria-label="Wellness radar"></canvas></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-id-badge card-title-icon"></i><span class="card-title">Scheda dettaglio</span></div>
+        <div id="playerCard"></div>
+      </div>
+    </div>
+
+    <!-- ═══ IMPORT GPS / FC ═══ -->
+    <div id="import" class="page">
+      <div class="page-header"><h1>Import GPS / FC</h1><p>Carica file CSV o Excel per GPS e Frequenza Cardiaca</p></div>
+      <div class="info-strip">
+        <strong>RPE e Wellness</strong> si sincronizzano da Google Forms (tab Google Forms).<br>
+        Usa questa sezione per caricare i file GPS e FC esportati dal tuo software.
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-file-spreadsheet card-title-icon"></i><span class="card-title">Import file</span></div>
+        <div class="tab-pills">
+          <button class="tab-pill active" onclick="setITab('gps',this)">GPS</button>
+          <button class="tab-pill" onclick="setITab('fc_csv',this)">Frequenza Cardiaca</button>
+        </div>
+        <div id="importContent"></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i class="ti ti-history card-title-icon"></i><span class="card-title">Log importazioni</span></div>
+        <div class="table-wrap">
+          <table><thead><tr><th>Data/ora</th><th>Tipo</th><th>File</th><th>Righe</th><th>Stato</th></tr></thead>
+          <tbody id="importLog"></tbody></table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
