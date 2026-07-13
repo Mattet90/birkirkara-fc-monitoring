@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="Birkirkara FC – Monitoraggio Atletico 2026/27">
+<meta name="description" content="birkirkara-fc-monitoring – Birkirkara FC 2026/27">
 <meta name="theme-color" content="#00A878">
-<title>Birkirkara FC · Monitoraggio Atletico</title>
+<title>Birkirkara FC · birkirkara-fc-monitoring</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
@@ -381,6 +381,32 @@ tbody tr:nth-child(even):hover td { background: var(--primary-l); }
 .modal-title { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: var(--primary-d); }
 .modal-close { background: none; border: none; cursor: pointer; font-size: 22px; color: var(--gray-400); line-height: 1; padding: 0; }
 .modal-close:hover { color: var(--red); }
+/* ── PHOTO UPLOAD ── */
+.photo-upload-area {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 14px;
+  padding: 12px 14px; background: var(--gray-50);
+  border: 1.5px dashed var(--gray-300); border-radius: 10px;
+  cursor: pointer; transition: all .15s; position: relative;
+}
+.photo-upload-area:hover { border-color: var(--primary); background: var(--primary-l); }
+.photo-upload-area input[type=file] {
+  position: absolute; inset: 0; opacity: 0; width: 100%; height: 100%; cursor: pointer;
+}
+.photo-preview {
+  width: 64px; height: 64px; border-radius: 50%;
+  object-fit: cover; border: 2px solid var(--primary);
+  flex-shrink: 0; background: var(--gray-100);
+}
+.photo-preview-placeholder {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-d) 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: var(--yellow); flex-shrink: 0;
+  border: 2px solid var(--yellow);
+}
+.photo-upload-text .title { font-size: 13px; font-weight: 600; color: var(--primary-d); }
+.photo-upload-text .sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+
 
 /* ── SPINNER ── */
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -413,6 +439,19 @@ tbody tr:nth-child(even):hover td { background: var(--primary-l); }
     <div class="modal-header">
       <span class="modal-title" id="modalTitle">Aggiungi Giocatore</span>
       <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <!-- Foto giocatore -->
+    <div class="photo-upload-area" onclick="document.getElementById('m_foto_input').click()">
+      <input type="file" id="m_foto_input" accept="image/*" onchange="previewPhoto(event)" onclick="event.stopPropagation()">
+      <div id="m_foto_preview_wrap">
+        <div class="photo-preview-placeholder" id="m_foto_placeholder">
+          <i class="ti ti-camera" aria-hidden="true"></i>
+        </div>
+      </div>
+      <div class="photo-upload-text">
+        <div class="title"><i class="ti ti-upload" style="font-size:13px" aria-hidden="true"></i> Carica foto giocatore</div>
+        <div class="sub">JPG, PNG, WebP — max 5 MB<br>L'immagine viene salvata localmente nel browser</div>
+      </div>
     </div>
     <div class="form-grid">
       <div class="form-group"><label>Nome</label><input type="text" id="m_nome" placeholder="Es. Marco"></div>
