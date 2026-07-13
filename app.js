@@ -8,21 +8,21 @@ const WELL_SHEET_ID = '1pOCUqz8usBdnt18N08Nd2XjMDgaxFN2FIu2HfPKAGqY';
 
 /* ─── ROSTER ─── */
 let ROSTER = [
-  {id:1,  nome:'Mark',    cognome:'Agius',     numero:1,  ruolo:'POR', dob:'1994-03-15', naz:'Maltese',   altezza:188, peso:82, piede:'Destro',   stato:'Disponibile', note:'Capitano'},
-  {id:2,  nome:'Joseph',  cognome:'Borg',      numero:3,  ruolo:'DC',  dob:'1997-07-22', naz:'Maltese',   altezza:183, peso:78, piede:'Destro',   stato:'Disponibile', note:''},
-  {id:3,  nome:'Kurt',    cognome:'Zammit',    numero:5,  ruolo:'DC',  dob:'1999-11-08', naz:'Maltese',   altezza:185, peso:80, piede:'Sinistro', stato:'Disponibile', note:''},
-  {id:4,  nome:'Ryan',    cognome:'Camenzuli', numero:2,  ruolo:'TER', dob:'2000-04-30', naz:'Maltese',   altezza:176, peso:72, piede:'Destro',   stato:'Disponibile', note:''},
-  {id:5,  nome:'Stefan',  cognome:'Pace',      numero:6,  ruolo:'TER', dob:'1998-09-14', naz:'Maltese',   altezza:178, peso:74, piede:'Sinistro', stato:'In recupero', note:'Affaticamento coscia'},
-  {id:6,  nome:'James',   cognome:'Muscat',    numero:8,  ruolo:'MED', dob:'1996-01-25', naz:'Maltese',   altezza:180, peso:76, piede:'Destro',   stato:'Disponibile', note:''},
-  {id:7,  nome:'Luke',    cognome:'Farrugia',  numero:10, ruolo:'TRA', dob:'2001-06-12', naz:'Maltese',   altezza:174, peso:70, piede:'Destro',   stato:'Disponibile', note:''},
-  {id:8,  nome:'Carlo',   cognome:'Mamo',      numero:7,  ruolo:'ALA', dob:'2002-02-18', naz:'Maltese',   altezza:172, peso:68, piede:'Sinistro', stato:'Disponibile', note:''},
-  {id:9,  nome:'Dylan',   cognome:'Grima',     numero:11, ruolo:'ALA', dob:'2003-08-05', naz:'Maltese',   altezza:170, peso:67, piede:'Destro',   stato:'Disponibile', note:''},
-  {id:10, nome:'Andre',   cognome:'Prates',    numero:9,  ruolo:'ATT', dob:'1995-12-20', naz:'Brasiliana',altezza:182, peso:79, piede:'Destro',   stato:'Disponibile', note:''},
-  {id:11, nome:'Nicolas', cognome:'Gauci',     numero:4,  ruolo:'CC',  dob:'2000-03-07', naz:'Maltese',   altezza:179, peso:75, piede:'Entrambi', stato:'Disponibile', note:''},
-  {id:12, nome:'Matthew', cognome:'Bartolo',   numero:14, ruolo:'DC',  dob:'1999-10-11', naz:'Maltese',   altezza:186, peso:81, piede:'Destro',   stato:'Infortunato', note:'Lesione ginocchio'},
-  {id:13, nome:'Ethan',   cognome:'Debono',    numero:15, ruolo:'MEZ', dob:'2004-05-23', naz:'Maltese',   altezza:176, peso:71, piede:'Sinistro', stato:'Disponibile', note:''},
-  {id:14, nome:'Paul',    cognome:'Fenech',    numero:17, ruolo:'MED', dob:'1997-08-16', naz:'Maltese',   altezza:181, peso:77, piede:'Destro',   stato:'Disponibile', note:''},
-  {id:15, nome:'Alex',    cognome:'Spiteri',   numero:22, ruolo:'POR', dob:'2001-01-09', naz:'Maltese',   altezza:190, peso:84, piede:'Destro',   stato:'Disponibile', note:'Secondo portiere'},
+  {id:1,  photo:null, nome:'Mark',    cognome:'Agius',     numero:1,  ruolo:'POR', dob:'1994-03-15', naz:'Maltese',   altezza:188, peso:82, piede:'Destro',   stato:'Disponibile', note:'Capitano'},
+  {id:2,  photo:null, nome:'Joseph',  cognome:'Borg',      numero:3,  ruolo:'DC',  dob:'1997-07-22', naz:'Maltese',   altezza:183, peso:78, piede:'Destro',   stato:'Disponibile', note:''},
+  {id:3,  photo:null, nome:'Kurt',    cognome:'Zammit',    numero:5,  ruolo:'DC',  dob:'1999-11-08', naz:'Maltese',   altezza:185, peso:80, piede:'Sinistro', stato:'Disponibile', note:''},
+  {id:4,  photo:null, nome:'Ryan',    cognome:'Camenzuli', numero:2,  ruolo:'TER', dob:'2000-04-30', naz:'Maltese',   altezza:176, peso:72, piede:'Destro',   stato:'Disponibile', note:''},
+  {id:5,  photo:null, nome:'Stefan',  cognome:'Pace',      numero:6,  ruolo:'TER', dob:'1998-09-14', naz:'Maltese',   altezza:178, peso:74, piede:'Sinistro', stato:'In recupero', note:'Affaticamento coscia'},
+  {id:6,  photo:null, nome:'James',   cognome:'Muscat',    numero:8,  ruolo:'MED', dob:'1996-01-25', naz:'Maltese',   altezza:180, peso:76, piede:'Destro',   stato:'Disponibile', note:''},
+  {id:7,  photo:null, nome:'Luke',    cognome:'Farrugia',  numero:10, ruolo:'TRA', dob:'2001-06-12', naz:'Maltese',   altezza:174, peso:70, piede:'Destro',   stato:'Disponibile', note:''},
+  {id:8,  photo:null, nome:'Carlo',   cognome:'Mamo',      numero:7,  ruolo:'ALA', dob:'2002-02-18', naz:'Maltese',   altezza:172, peso:68, piede:'Sinistro', stato:'Disponibile', note:''},
+  {id:9,  photo:null, nome:'Dylan',   cognome:'Grima',     numero:11, ruolo:'ALA', dob:'2003-08-05', naz:'Maltese',   altezza:170, peso:67, piede:'Destro',   stato:'Disponibile', note:''},
+  {id:10,  photo:null, nome:'Andre',   cognome:'Prates',    numero:9,  ruolo:'ATT', dob:'1995-12-20', naz:'Brasiliana',altezza:182, peso:79, piede:'Destro',   stato:'Disponibile', note:''},
+  {id:11,  photo:null, nome:'Nicolas', cognome:'Gauci',     numero:4,  ruolo:'CC',  dob:'2000-03-07', naz:'Maltese',   altezza:179, peso:75, piede:'Entrambi', stato:'Disponibile', note:''},
+  {id:12,  photo:null, nome:'Matthew', cognome:'Bartolo',   numero:14, ruolo:'DC',  dob:'1999-10-11', naz:'Maltese',   altezza:186, peso:81, piede:'Destro',   stato:'Infortunato', note:'Lesione ginocchio'},
+  {id:13,  photo:null, nome:'Ethan',   cognome:'Debono',    numero:15, ruolo:'MEZ', dob:'2004-05-23', naz:'Maltese',   altezza:176, peso:71, piede:'Sinistro', stato:'Disponibile', note:''},
+  {id:14,  photo:null, nome:'Paul',    cognome:'Fenech',    numero:17, ruolo:'MED', dob:'1997-08-16', naz:'Maltese',   altezza:181, peso:77, piede:'Destro',   stato:'Disponibile', note:''},
+  {id:15,  photo:null, nome:'Alex',    cognome:'Spiteri',   numero:22, ruolo:'POR', dob:'2001-01-09', naz:'Maltese',   altezza:190, peso:84, piede:'Destro',   stato:'Disponibile', note:'Secondo portiere'},
 ];
 let rosterIdCounter = 16;
 let editingPlayerId = null;
@@ -173,6 +173,39 @@ function closeSidebar() {
 /* ═══════════════════════════════════════════
    GESTIONE ROSA
 ═══════════════════════════════════════════ */
+
+/* ─── PHOTO MANAGEMENT ─── */
+let currentPhotoB64 = null;
+
+function previewPhoto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('Immagine troppo grande. Max 5 MB.'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentPhotoB64 = e.target.result; // data:image/...;base64,...
+    updatePhotoPreview(currentPhotoB64);
+  };
+  reader.readAsDataURL(file);
+}
+
+function updatePhotoPreview(src) {
+  const wrap = document.getElementById('m_foto_preview_wrap');
+  if (!wrap) return;
+  if (src) {
+    wrap.innerHTML = `<img src="${src}" class="photo-preview" alt="Foto giocatore">`;
+  } else {
+    wrap.innerHTML = `<div class="photo-preview-placeholder" id="m_foto_placeholder"><i class="ti ti-camera" aria-hidden="true"></i></div>`;
+  }
+}
+
+function resetPhotoPreview() {
+  currentPhotoB64 = null;
+  updatePhotoPreview(null);
+  const inp = document.getElementById('m_foto_input');
+  if (inp) inp.value = '';
+}
+
 function openModal(id=null) {
   editingPlayerId = id;
   document.getElementById('modalTitle').textContent = id!==null ? 'Modifica Giocatore' : 'Aggiungi Giocatore';
@@ -190,9 +223,13 @@ function openModal(id=null) {
     document.getElementById('m_piede').value   = p.piede;
     document.getElementById('m_stato').value   = p.stato;
     document.getElementById('m_note').value    = p.note;
+    // Carica foto esistente
+    currentPhotoB64 = p.photo || null;
+    updatePhotoPreview(currentPhotoB64);
   } else {
     ['m_nome','m_cognome','m_numero','m_dob','m_naz','m_altezza','m_peso','m_note'].forEach(i=>{ document.getElementById(i).value=''; });
     document.getElementById('m_ruolo').value=''; document.getElementById('m_piede').value='Destro'; document.getElementById('m_stato').value='Disponibile';
+    resetPhotoPreview();
   }
   document.getElementById('playerModal').classList.add('open');
 }
@@ -200,6 +237,7 @@ function openModal(id=null) {
 function closeModal() {
   document.getElementById('playerModal').classList.remove('open');
   editingPlayerId = null;
+  resetPhotoPreview();
 }
 
 function savePlayer() {
@@ -208,6 +246,7 @@ function savePlayer() {
   if (!nome||!cognome) { alert('Nome e Cognome sono obbligatori'); return; }
   const player = {
     id: editingPlayerId ?? rosterIdCounter++,
+    photo: currentPhotoB64,
     nome, cognome,
     numero:  parseInt(document.getElementById('m_numero').value)||0,
     ruolo:   document.getElementById('m_ruolo').value,
@@ -290,10 +329,13 @@ function renderRoster() {
         const col  = RUOLO_COLOR[p.ruolo]||'#637870';
         const sb   = STATUS_BADGE[p.stato]||'badge-gray';
         const age  = p.dob ? Math.floor((Date.now()-new Date(p.dob))/(365.25*86400000)) : '—';
+        const avatarHtml = p.photo
+          ? `<img src="${p.photo}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid ${col};flex-shrink:0" alt="${p.nome}">`
+          : `<div class="player-avatar" style="background:linear-gradient(135deg,${col} 0%,${col}bb 100%)">${init}</div>`;
         return `<div class="player-card">
           <span class="player-num">${p.numero||'—'}</span>
           <div class="player-card-top">
-            <div class="player-avatar" style="background:linear-gradient(135deg,${col} 0%,${col}bb 100%)">${init}</div>
+            ${avatarHtml}
             <div><div class="player-name">${p.cognome} ${p.nome}</div><div class="player-role">${p.ruolo||'—'} · ${age} anni</div></div>
           </div>
           <div class="player-info">
@@ -461,7 +503,11 @@ function renderOverview() {
     const ruoloP=rp?.ruolo||'—'; const statoP=rp?.stato||'—';
     const col=RUOLO_COLOR[ruoloP]||'#637870';
     const sb=STATUS_BADGE[statoP]||'badge-gray';
-    return `<tr><td><strong>${p}</strong></td>
+    const rp2=ROSTER.find(r=>r.cognome+' '+r.nome.charAt(0)+'.'===p);
+    const thumbHtml = rp2?.photo
+      ? `<img src="${rp2.photo}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid var(--primary);margin-right:6px;vertical-align:middle" alt="">`
+      : `<span style="display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--primary);align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--yellow);margin-right:6px;vertical-align:middle;flex-shrink:0">${(rp2?.nome?.charAt(0)||p.charAt(0))+(rp2?.cognome?.charAt(0)||'')}</span>`;
+    return `<tr><td style="white-space:nowrap">${thumbHtml}<strong>${p}</strong></td>
       <td><span style="background:${col}22;color:${col};font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px">${ruoloP}</span></td>
       <td><span class="badge ${sb}">${statoP}</span></td>
       <td>${srcTag(hasL?'live':'demo')}</td>
@@ -493,7 +539,11 @@ function renderRPE() {
     const d=S.rpeData[p]||{}; const ptl=getTL(p);
     const prpe=rnd(DAYS.reduce((s,day)=>s+(d[day]?.rpe||0),0)/DAYS.length);
     const hasL=Object.values(S.rpeSrc[p]||{}).some(s=>s==='live');
-    return `<tr><td><strong>${p}</strong></td><td>${srcTag(hasL?'live':'demo')}</td>
+    const rp2=ROSTER.find(r=>r.cognome+' '+r.nome.charAt(0)+'.'===p);
+    const thumbHtml = rp2?.photo
+      ? `<img src="${rp2.photo}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid var(--primary);margin-right:6px;vertical-align:middle" alt="">`
+      : `<span style="display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--primary);align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--yellow);margin-right:6px;vertical-align:middle;flex-shrink:0">${(rp2?.nome?.charAt(0)||p.charAt(0))+(rp2?.cognome?.charAt(0)||'')}</span>`;
+    return `<tr><td style="white-space:nowrap">${thumbHtml}<strong>${p}</strong></td><td>${srcTag(hasL?'live':'demo')}</td>
       ${DAYS.map(day=>{const x=d[day];const dot=(S.rpeSrc[p]?.[day]==='live')?'<span style="color:#16a34a;font-size:9px">●</span>':'';return `<td>${x?.rpe||0}${dot}<br><span style="color:var(--gray-400);font-size:10px;font-family:'DM Mono',monospace">${x?.tl||0}</span></td>`;}).join('')}
       <td style="font-family:'DM Mono',monospace"><strong>${ptl}</strong></td>
       <td style="font-family:'DM Mono',monospace">${prpe}</td>
@@ -547,7 +597,11 @@ function renderWellness() {
   document.getElementById('wellBody').innerHTML=PLAYERS().map(p=>{
     const d=S.wellData[p]||{hi:0}; const cl=d.hi>=25?'badge-red':d.hi>=18?'badge-amber':'badge-green';
     const lb=d.hi>=25?'Allerta':d.hi>=18?'Attenzione':'Buono';
-    return `<tr><td><strong>${p}</strong></td><td>${srcTag(S.wellSrc[p]||'demo')}</td><td>${d.sleep||0}/7</td><td>${d.muscle||0}/7</td><td>${d.fatigue||0}/7</td><td>${d.stress||0}/7</td><td>${d.motivation||0}/7</td><td style="font-family:'DM Mono',monospace"><strong>${d.hi||0}/35</strong></td><td><span class="badge ${cl}">${lb}</span></td></tr>`;
+    const rp2=ROSTER.find(r=>r.cognome+' '+r.nome.charAt(0)+'.'===p);
+    const thumbHtml = rp2?.photo
+      ? `<img src="${rp2.photo}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid var(--primary);margin-right:6px;vertical-align:middle" alt="">`
+      : `<span style="display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--primary);align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--yellow);margin-right:6px;vertical-align:middle;flex-shrink:0">${(rp2?.nome?.charAt(0)||p.charAt(0))+(rp2?.cognome?.charAt(0)||'')}</span>`;
+    return `<tr><td style="white-space:nowrap">${thumbHtml}<strong>${p}</strong></td><td>${srcTag(S.wellSrc[p]||'demo')}</td><td>${d.sleep||0}/7</td><td>${d.muscle||0}/7</td><td>${d.fatigue||0}/7</td><td>${d.stress||0}/7</td><td>${d.motivation||0}/7</td><td style="font-family:'DM Mono',monospace"><strong>${d.hi||0}/35</strong></td><td><span class="badge ${cl}">${lb}</span></td></tr>`;
   }).join('');
 }
 
@@ -582,7 +636,11 @@ function renderFC() {
     <div class="kpi-card c-yellow"><div class="kpi-label">Z4 media</div><div class="kpi-value">${Math.round(PLAYERS().reduce((s,p)=>s+(S.fcData[p]?.z4||0),0)/PLAYERS().length)}'</div></div>`;
   destroyC('fcChart');
   charts.fcChart=new Chart(document.getElementById('fcChart'),{type:'bar',data:{labels:PLAYERS().map(p=>p.split(' ')[0]),datasets:[{label:'Z5',data:PLAYERS().map(p=>S.fcData[p]?.z5||0),backgroundColor:'#dc2626',borderRadius:2},{label:'Z4',data:PLAYERS().map(p=>S.fcData[p]?.z4||0),backgroundColor:'#F5C518',borderRadius:2},{label:'Z3',data:PLAYERS().map(p=>S.fcData[p]?.z3||0),backgroundColor:'#00A878',borderRadius:2},{label:'Z2',data:PLAYERS().map(p=>S.fcData[p]?.z2||0),backgroundColor:'#1d4ed8',borderRadius:2},{label:'Z1',data:PLAYERS().map(p=>S.fcData[p]?.z1||0),backgroundColor:'#7c3aed',borderRadius:2}]},options:{responsive:true,maintainAspectRatio:false,scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{font:{size:10}},grid:{color:'rgba(0,0,0,.05)'}}},plugins:{legend:{display:false}}}});
-  document.getElementById('fcBody').innerHTML=PLAYERS().map(p=>{const d=S.fcData[p]||{};return `<tr><td><strong>${p}</strong></td><td style="font-family:'DM Mono',monospace">${d.z5||0}'</td><td style="font-family:'DM Mono',monospace">${d.z4||0}'</td><td style="font-family:'DM Mono',monospace">${d.z3||0}'</td><td style="font-family:'DM Mono',monospace">${d.z2||0}'</td><td style="font-family:'DM Mono',monospace">${d.z1||0}'</td><td style="font-family:'DM Mono',monospace"><strong>${d.tl||0} UA</strong></td></tr>`;}).join('');
+  document.getElementById('fcBody').innerHTML=PLAYERS().map(p=>{const d=S.fcData[p]||{};const rp2=ROSTER.find(r=>r.cognome+' '+r.nome.charAt(0)+'.'===p);
+    const thumbHtml = rp2?.photo
+      ? `<img src="${rp2.photo}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid var(--primary);margin-right:6px;vertical-align:middle" alt="">`
+      : `<span style="display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--primary);align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--yellow);margin-right:6px;vertical-align:middle;flex-shrink:0">${(rp2?.nome?.charAt(0)||p.charAt(0))+(rp2?.cognome?.charAt(0)||'')}</span>`;
+    return `<tr><td style="white-space:nowrap">${thumbHtml}<strong>${p}</strong></td><td style="font-family:'DM Mono',monospace">${d.z5||0}'</td><td style="font-family:'DM Mono',monospace">${d.z4||0}'</td><td style="font-family:'DM Mono',monospace">${d.z3||0}'</td><td style="font-family:'DM Mono',monospace">${d.z2||0}'</td><td style="font-family:'DM Mono',monospace">${d.z1||0}'</td><td style="font-family:'DM Mono',monospace"><strong>${d.tl||0} UA</strong></td></tr>`;}).join('');
 }
 function addFC() {
   const p=document.getElementById('fc_player').value;
@@ -615,7 +673,11 @@ function renderACWR() {
     const avg2=rnd(tls.reduce((a,b)=>a+b,0)/tls.length);
     const sd=rnd(Math.sqrt(tls.reduce((s,v)=>s+Math.pow(v-avg2,2),0)/tls.length));
     const ac=rnd(tls.reduce((a,b)=>a+b,0)/7); const ch=rnd(tls.reduce((a,b)=>a+b,0)/tls.length);
-    return `<tr><td><strong>${p}</strong></td><td style="font-family:'DM Mono',monospace">${ac}</td><td style="font-family:'DM Mono',monospace">${ch}</td><td style="font-family:'DM Mono',monospace">${acwr}</td><td style="font-family:'DM Mono',monospace">${avg2}</td><td style="font-family:'DM Mono',monospace">${sd}</td><td style="font-family:'DM Mono',monospace">${mon}</td><td style="font-family:'DM Mono',monospace">${fat.toLocaleString()}</td><td style="font-family:'DM Mono',monospace">${pct}%</td><td>${riskBadge(acwr)}</td></tr>`;
+    const rp2=ROSTER.find(r=>r.cognome+' '+r.nome.charAt(0)+'.'===p);
+    const thumbHtml = rp2?.photo
+      ? `<img src="${rp2.photo}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid var(--primary);margin-right:6px;vertical-align:middle" alt="">`
+      : `<span style="display:inline-flex;width:28px;height:28px;border-radius:50%;background:var(--primary);align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--yellow);margin-right:6px;vertical-align:middle;flex-shrink:0">${(rp2?.nome?.charAt(0)||p.charAt(0))+(rp2?.cognome?.charAt(0)||'')}</span>`;
+    return `<tr><td style="white-space:nowrap">${thumbHtml}<strong>${p}</strong></td><td style="font-family:'DM Mono',monospace">${ac}</td><td style="font-family:'DM Mono',monospace">${ch}</td><td style="font-family:'DM Mono',monospace">${acwr}</td><td style="font-family:'DM Mono',monospace">${avg2}</td><td style="font-family:'DM Mono',monospace">${sd}</td><td style="font-family:'DM Mono',monospace">${mon}</td><td style="font-family:'DM Mono',monospace">${fat.toLocaleString()}</td><td style="font-family:'DM Mono',monospace">${pct}%</td><td>${riskBadge(acwr)}</td></tr>`;
   }).join('');
 }
 
@@ -642,7 +704,23 @@ function renderPlayer() {
   destroyC('playerWellChart');
   charts.playerWellChart=new Chart(document.getElementById('playerWellChart'),{type:'radar',data:{labels:WLBLS,datasets:[{label:p,data:WDIMS.map(k=>w[k]||0),borderColor:'#00A878',backgroundColor:'rgba(0,168,120,.12)',pointBackgroundColor:'#00A878',pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:7,ticks:{stepSize:1,font:{size:9}},grid:{color:'rgba(0,0,0,.08)'},angleLines:{color:'rgba(0,0,0,.08)'}}},plugins:{legend:{display:false}}}});
   const zColors=['#dc2626','#F5C518','#00A878','#1d4ed8','#7c3aed'];
-  const rosterInfo = rp ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+  const photoHtml = rp?.photo
+    ? `<img src="${rp.photo}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid var(--primary);box-shadow:0 4px 12px rgba(0,168,120,.2);flex-shrink:0" alt="${rp?.nome}">`
+    : `<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--primary) 0%,var(--primary-d) 100%);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--yellow);border:3px solid var(--yellow);flex-shrink:0">${(rp?.nome?.charAt(0)||'?')+(rp?.cognome?.charAt(0)||'?')}</div>`;
+  const rosterInfo = rp ? `<div style="display:flex;align-items:center;gap:16px;margin-bottom:14px;padding:14px;background:var(--primary-l);border-radius:10px;border:1px solid #9fe7d0">
+    ${photoHtml}
+    <div style="flex:1">
+      <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--primary-d)">${rp.cognome} ${rp.nome}</div>
+      <div style="font-size:12px;color:var(--gray-500);margin-bottom:8px">#${rp.numero} · ${rp.ruolo} · ${rp.naz}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <span style="background:#00A87822;color:#006B4D;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px">${rp.ruolo}</span>
+        ${rp.altezza?`<span style="background:#e0f7f1;color:#006B4D;font-size:10px;padding:2px 7px;border-radius:20px">${rp.altezza}cm · ${rp.peso}kg</span>`:''}
+        ${rp.piede?`<span style="background:#e0f7f1;color:#006B4D;font-size:10px;padding:2px 7px;border-radius:20px">Piede ${rp.piede}</span>`:''}
+        <span class="badge ${STATUS_BADGE[rp.stato]||'badge-gray'}">${rp.stato}</span>
+      </div>
+    </div>
+  </div>` : '';
+  const _unusedRosterInfo = rp ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
     <span style="background:#00A87822;color:#006B4D;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px">${rp.ruolo}</span>
     <span style="background:#e0f7f1;color:#006B4D;font-size:10px;padding:2px 7px;border-radius:20px">#${rp.numero}</span>
     ${rp.naz?`<span style="background:#e0f7f1;color:#006B4D;font-size:10px;padding:2px 7px;border-radius:20px">${rp.naz}</span>`:''}
