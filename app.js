@@ -67,7 +67,19 @@ let S = { rpeData:{}, rpeSrc:{}, fcData:{}, wellData:{}, wellSrc:{}, gpsData:[] 
 /* ─── INIT ─── */
 function init() {
   document.getElementById('sessDate').value = new Date().toISOString().split('T')[0];
-  generateDemoData();
+  const hasSaved = loadAll();
+  if (!hasSaved) {
+    // Prima apertura: genera dati demo
+    generateDemoData();
+    saveAll();
+  } else {
+    // Assicura che i giocatori della rosa abbiano dati di monitoraggio
+    PLAYERS().forEach(p => {
+      if (!S.rpeData[p]) { S.rpeData[p] = {}; S.rpeSrc[p] = {}; DAYS.forEach(d => { S.rpeData[p][d]={rpe:0,min:0,tl:0}; S.rpeSrc[p][d]='demo'; }); }
+      if (!S.fcData[p])   S.fcData[p]  = {z5:0,z4:0,z3:0,z2:0,z1:0,tl:0};
+      if (!S.wellData[p]) { S.wellData[p]={sleep:3,muscle:3,fatigue:3,stress:3,motivation:3,hi:15}; S.wellSrc[p]='demo'; }
+    });
+  }
   populateSelects();
   renderRoster();
   renderRosterKpi();
@@ -174,6 +186,129 @@ function closeSidebar() {
    GESTIONE ROSA
 ═══════════════════════════════════════════ */
 
+
+/* ═══════════════════════════════════════════
+   PERSISTENZA LOCALE (localStorage)
+═══════════════════════════════════════════ */
+const LS = {
+  ROSTER:   'bkk_roster',
+  RPE:      'bkk_rpe',
+  RPE_SRC:  'bkk_rpesrc',
+  FC:       'bkk_fc',
+  WELL:     'bkk_well',
+  WELL_SRC: 'bkk_wellsrc',
+  GPS:      'bkk_gps',
+  ID_CTR:   'bkk_id_ctr',
+};
+
+function saveAll() {
+  try {
+    localStorage.setItem(LS.ROSTER,   JSON.stringify(ROSTER));
+    localStorage.setItem(LS.RPE,      JSON.stringify(S.rpeData));
+    localStorage.setItem(LS.RPE_SRC,  JSON.stringify(S.rpeSrc));
+    localStorage.setItem(LS.FC,       JSON.stringify(S.fcData));
+    localStorage.setItem(LS.WELL,     JSON.stringify(S.wellData));
+    localStorage.setItem(LS.WELL_SRC, JSON.stringify(S.wellSrc));
+    localStorage.setItem(LS.GPS,      JSON.stringify(S.gpsData));
+    localStorage.setItem(LS.ID_CTR,   String(rosterIdCounter));
+  } catch(e) {
+    console.warn('localStorage write error:', e);
+  }
+}
+
+function loadAll() {
+  try {
+    const savedRoster = localStorage.getItem(LS.ROSTER);
+    if (savedRoster) {
+      ROSTER = JSON.parse(savedRoster);
+      console.log(`✓ Rosa caricata: ${ROSTER.length} giocatori`);
+    }
+    const savedIdCtr = localStorage.getItem(LS.ID_CTR);
+    if (savedIdCtr) rosterIdCounter = parseInt(savedIdCtr) || 16;
+
+    const savedRpe = localStorage.getItem(LS.RPE);
+    if (savedRpe) S.rpeData = JSON.parse(savedRpe);
+
+    const savedRpeSrc = localStorage.getItem(LS.RPE_SRC);
+    if (savedRpeSrc) S.rpeSrc = JSON.parse(savedRpeSrc);
+
+    const savedFc = localStorage.getItem(LS.FC);
+    if (savedFc) S.fcData = JSON.parse(savedFc);
+
+    const savedWell = localStorage.getItem(LS.WELL);
+    if (savedWell) S.wellData = JSON.parse(savedWell);
+
+    const savedWellSrc = localStorage.getItem(LS.WELL_SRC);
+    if (savedWellSrc) S.wellSrc = JSON.parse(savedWellSrc);
+
+    const savedGps = localStorage.getItem(LS.GPS);
+    if (savedGps) S.gpsData = JSON.parse(savedGps);
+
+    return !!savedRoster; // true = dati esistenti trovati
+  } catch(e) {
+    console.warn('localStorage read error:', e);
+    return false;
+  }
+}
+
+function clearAll() {
+  if (!confirm('Sei sicuro di voler cancellare TUTTI i dati salvati? Questa operazione è irreversibile.')) return;
+  Object.values(LS).forEach(k => localStorage.removeItem(k));
+  location.reload();
+}
+
+function exportData() {
+  const data = {
+    roster:   ROSTER,
+    rpeData:  S.rpeData,
+    rpeSrc:   S.rpeSrc,
+    fcData:   S.fcData,
+    wellData: S.wellData,
+    wellSrc:  S.wellSrc,
+    gpsData:  S.gpsData,
+    exportedAt: new Date().toISOString(),
+    version: '2.0'
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `birkirkara-backup-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importData() {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!data.roster) throw new Error('File non valido');
+        ROSTER       = data.roster;
+        S.rpeData    = data.rpeData  || {};
+        S.rpeSrc     = data.rpeSrc   || {};
+        S.fcData     = data.fcData   || {};
+        S.wellData   = data.wellData || {};
+        S.wellSrc    = data.wellSrc  || {};
+        S.gpsData    = data.gpsData  || [];
+        rosterIdCounter = Math.max(...ROSTER.map(p=>p.id), 15) + 1;
+        saveAll();
+        populateSelects();
+        renderRoster(); renderRosterKpi(); renderOverview();
+        alert(`✓ Backup ripristinato: ${ROSTER.length} giocatori caricati.`);
+      } catch(err) {
+        alert('Errore lettura file: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
 /* ─── PHOTO MANAGEMENT ─── */
 let currentPhotoB64 = null;
 
@@ -270,6 +405,7 @@ function savePlayer() {
     S.wellData[key] = {sleep:3,muscle:3,fatigue:3,stress:3,motivation:3,hi:15};
     S.wellSrc[key]  = 'demo';
   }
+  saveAll();
   closeModal();
   populateSelects();
   renderRoster();
@@ -279,6 +415,7 @@ function savePlayer() {
 function deletePlayer(id) {
   if (!confirm('Eliminare questo giocatore dalla rosa?')) return;
   ROSTER = ROSTER.filter(x=>x.id!==id);
+  saveAll();
   populateSelects();
   renderRoster();
   renderRosterKpi();
@@ -446,6 +583,7 @@ async function syncAll() {
       });
     }
   } catch(e){}
+  saveAll();
   document.getElementById('lastSync').textContent='Sync: '+new Date().toLocaleTimeString('it-IT');
   addSyncLog('RPE Forms',   rpeU>0?`${rpeU} atleti aggiornati`:'Foglio vuoto', rpeU,  rpeU>0?'ok':'wait');
   addSyncLog('Wellness',    wellU>0?`${wellU} atleti aggiornati`:'Foglio vuoto', wellU, wellU>0?'ok':'wait');
@@ -561,6 +699,7 @@ function addRPE() {
   if(!S.rpeData[p])S.rpeData[p]={};
   if(!S.rpeSrc[p])S.rpeSrc[p]={};
   S.rpeData[p][md]={rpe,min,tl:Math.round(rpe*min)}; S.rpeSrc[p][md]='manual';
+  saveAll();
   document.getElementById('inp_rpe').value=''; document.getElementById('inp_min').value='';
   document.getElementById('rpePlayer').value=p; renderRPE();
 }
@@ -585,7 +724,9 @@ function saveWellness() {
   const p=document.getElementById('wellPlayer').value; if(!p)return;
   WDIMS.forEach(k=>{if(wellInput[k])S.wellData[p][k]=wellInput[k];});
   S.wellData[p].hi=WDIMS.reduce((s,k)=>s+S.wellData[p][k],0);
-  S.wellSrc[p]='manual'; renderWellness();
+  S.wellSrc[p]='manual';
+  saveAll();
+  renderWellness();
 }
 function renderWellness() {
   const sel=document.getElementById('wellPlayer').value||PLAYERS()[0];
@@ -645,7 +786,9 @@ function renderFC() {
 function addFC() {
   const p=document.getElementById('fc_player').value;
   const z5=+document.getElementById('fc_z5').value||0,z4=+document.getElementById('fc_z4').value||0,z3=+document.getElementById('fc_z3').value||0,z2=+document.getElementById('fc_z2').value||0,z1=+document.getElementById('fc_z1').value||0;
-  S.fcData[p]={z5,z4,z3,z2,z1,tl:z5*5+z4*4+z3*3+z2*2+z1}; renderFC();
+  S.fcData[p]={z5,z4,z3,z2,z1,tl:z5*5+z4*4+z3*3+z2*2+z1};
+  saveAll();
+  renderFC();
 }
 
 /* ═══════════════════════════════════════════
@@ -819,6 +962,7 @@ function applyImport(tab) {
   } else if(tab==='fc_csv'){
     rows.forEach(row=>{const a=(row[document.getElementById('mp_fc_csv_atleta')?.value||'']||'').trim();if(!a)return;const d={z5:+(row[document.getElementById('mp_fc_csv_z5')?.value]||0),z4:+(row[document.getElementById('mp_fc_csv_z4')?.value]||0),z3:+(row[document.getElementById('mp_fc_csv_z3')?.value]||0),z2:+(row[document.getElementById('mp_fc_csv_z2')?.value]||0),z1:+(row[document.getElementById('mp_fc_csv_z1')?.value]||0)};d.tl=d.z5*5+d.z4*4+d.z3*3+d.z2*2+d.z1;S.fcData[a]=d;});
   }
+  saveAll();
   importLogs.unshift({ts:new Date().toLocaleString('it-IT'),tipo:tab==='gps'?'GPS':'FC',name:pf.name,rows:rows.length,ok:true});
   renderImportLog();
   alert(`✓ ${rows.length} righe importate da "${pf.name}"`);
