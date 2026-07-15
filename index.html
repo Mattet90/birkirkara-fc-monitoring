@@ -154,6 +154,16 @@ body { display: flex; min-height: 100vh; overflow-x: hidden; }
 }
 .btn-sync:hover { background: var(--primary-d); }
 .btn-sync:disabled { opacity: .6; pointer-events: none; }
+.btn-topbar {
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  background: var(--gray-100); color: var(--gray-600);
+  border: 1px solid var(--gray-200); border-radius: 7px;
+  cursor: pointer; font-size: 15px; transition: all .15s;
+}
+.btn-topbar:hover { background: var(--primary-l); color: var(--primary-d); border-color: var(--primary); }
+.btn-topbar-danger:hover { background: var(--red-l); color: var(--red); border-color: var(--red); }
+
 .mobile-menu-btn { display: none; background: none; border: none; cursor: pointer; color: var(--primary-d); font-size: 22px; padding: 4px; }
 
 /* ── CONTENT ── */
@@ -530,6 +540,9 @@ tbody tr:nth-child(even):hover td { background: var(--primary-l); }
   <div class="sidebar-footer">
     <strong>Staff Tecnico · Birkirkara FC</strong>
     v2.0 · Stagione 2026/27
+    <div style="margin-top:6px;font-size:9px;color:rgba(245,197,24,.4);display:flex;align-items:center;gap:4px">
+      <i class="ti ti-device-floppy" style="font-size:11px" aria-hidden="true"></i> Dati salvati localmente
+    </div>
   </div>
 </nav>
 
@@ -548,8 +561,19 @@ tbody tr:nth-child(even):hover td { background: var(--primary-l); }
         <span class="sync-dot" id="dotWell" style="margin-left:6px"></span> Wellness
       </div>
       <span style="font-size:10px;color:var(--gray-400)" id="lastSync">—</span>
+      <div style="display:flex;gap:4px">
+        <button class="btn-topbar" onclick="exportData()" title="Esporta backup JSON">
+          <i class="ti ti-download" aria-hidden="true"></i>
+        </button>
+        <button class="btn-topbar" onclick="importData()" title="Importa backup JSON">
+          <i class="ti ti-upload" aria-hidden="true"></i>
+        </button>
+        <button class="btn-topbar btn-topbar-danger" onclick="clearAll()" title="Azzera tutti i dati">
+          <i class="ti ti-trash" aria-hidden="true"></i>
+        </button>
+      </div>
       <button class="btn-sync" onclick="syncAll()" id="syncBtn">
-        <i class="ti ti-refresh"></i> Sincronizza
+        <i class="ti ti-refresh" aria-hidden="true"></i> Sincronizza
       </button>
     </div>
   </header>
