@@ -4,7 +4,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 const RPE_CSV_PUBLIC = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR4YuMaExxKAj4GzR3x4rGvvMd7aBb9nI6TmkvBo0udVbWjXLT9IedUK08BfklRjbmj-lyoxo3WWz6G/pub?gid=2015047575&single=true&output=csv';
-const WELL_CSV_PUBLIC = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSpbAUWImAhOSSwvG6CZ7woXv0J68KWiREFr9qnxEZJe8kcezIFGnAvRJ_PnyexI1YVS9L0ngCKLQkd/pub?gid=296283925&single=true&output=csv';
+const WELL_CSV_PUBLIC = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQgLyLQTm45a4a9270zTzc8he5EdkCn0BIUzkki4pUTqoWn-1_WXN69XibHe78_Kmzi38GjPp7nWDZS/pub?gid=261355929&single=true&output=csv';
 
 /* ─── ROSTER ─── */
 let ROSTER = [
@@ -621,7 +621,7 @@ async function syncAll() {
     }
   } catch(e) { console.error('RPE sync error:', e); }
   try {
-    const wellCsvText = await fetchCSV('https://docs.google.com/spreadsheets/d/e/2PACX-1vSpbAUWImAhOSSwvG6CZ7woXv0J68KWiREFr9qnxEZJe8kcezIFGnAvRJ_PnyexI1YVS9L0ngCKLQkd/pub?gid=296283925&single=true&output=csv');
+    const wellCsvText = await fetchCSV('https://docs.google.com/spreadsheets/d/e/2PACX-1vQgLyLQTm45a4a9270zTzc8he5EdkCn0BIUzkki4pUTqoWn-1_WXN69XibHe78_Kmzi38GjPp7nWDZS/pub?gid=261355929&single=true&output=csv');
     if (wellCsvText) {
       const rows = Papa.parse(wellCsvText, {header:true, skipEmptyLines:true}).data;
       rows.forEach(row => {
