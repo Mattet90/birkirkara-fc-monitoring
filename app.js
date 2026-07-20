@@ -620,21 +620,8 @@ async function syncAll() {
       console.warn('RPE CSV: nessun dato ricevuto');
     }
   } catch(e) { console.error('RPE sync error:', e); }
-  try {
-    const wellCsvText = await fetchCSV('https://docs.google.com/spreadsheets/d/e/2PACX-1vQgLyLQTm45a4a9270zTzc8he5EdkCn0BIUzkki4pUTqoWn-1_WXN69XibHe78_Kmzi38GjPp7nWDZS/pub?gid=261355929&single=true&output=csv');
-    if (wellCsvText) {
-      const rows = Papa.parse(wellCsvText, {header:true, skipEmptyLines:true}).data;
-      rows.forEach(row => {
-        const keys = Object.keys(row);
-        // Col A=timestamp, B=nome, C=sonno, D=dolori, E=stanchezza, F=stress, G=motivazione
-        const rawName = (row[keys[1]]||'').trim();
-        if (!rawName) return;
-        const p = matchPlayer(rawName);
-        if (!S.wellData[p]) S.wellData[p] = {sleep:3,muscle:3,fatigue:3,stress:3,motivation:3,hi:15};
-        const v = (i) => {
-          const val = parseInt(row[keys[i]]);
-          return (!isNaN(val) && val>=1 && val<=7) ? val : null;
-        };
+  // Wellness: import manuale CSV (vedi tab Google Forms → drop zone)
+;
         if (v(2)!==null) S.wellData[p].sleep      = v(2);
         if (v(3)!==null) S.wellData[p].muscle     = v(3);
         if (v(4)!==null) S.wellData[p].fatigue    = v(4);
@@ -705,7 +692,93 @@ function renderMinOverrideGrid() {
   }).join('');
 }
 
-function renderSync()    { renderSyncLog(); renderMinOverrideGrid(); }
+
+/* ═══════════════════════════════════════════
+   IMPORT WELLNESS DA CSV MANUALE
+═══════════════════════════════════════════ */
+function handleWellnessImport(event) {
+  const file = event.target?.files?.[0] || event;
+  if (!file) return;
+  const dz = document.getElementById('dz_wellness_forms');
+  const ds = document.getElementById('ds_wellness_forms');
+  if (ds) ds.textContent = 'Lettura...';
+
+  const processRows = (rows) => {
+    if (!rows || !rows.length) {
+      if (ds) ds.innerHTML = '<span style="color:var(--red)">File vuoto o formato non riconosciuto</span>';
+      if (dz) dz.classList.add('err');
+      return;
+    }
+    let updated = 0;
+    const preview = [];
+    rows.forEach(row => {
+      const keys = Object.keys(row);
+      if (keys.length < 3) return;
+      const rawName = (row[keys[1]] || '').toString().trim();
+      if (!rawName) return;
+      const p = matchPlayer(rawName);
+      const v = (i) => { const n=parseInt(row[keys[i]]); return (n>=1&&n<=7)?n:null; };
+      if (!S.wellData[p]) S.wellData[p]={sleep:3,muscle:3,fatigue:3,stress:3,motivation:3,hi:15};
+      const s=v(2); if(s!==null) S.wellData[p].sleep      = s;
+      const d=v(3); if(d!==null) S.wellData[p].muscle     = d;
+      const f=v(4); if(f!==null) S.wellData[p].fatigue    = f;
+      const t=v(5); if(t!==null) S.wellData[p].stress     = t;
+      const m=v(6); if(m!==null) S.wellData[p].motivation = m;
+      S.wellData[p].hi = WDIMS.reduce((s,k)=>s+S.wellData[p][k],0);
+      S.wellSrc[p] = 'live';
+      updated++;
+      preview.push({ nome:rawName, p, d:S.wellData[p] });
+    });
+    if (!updated) {
+      if (ds) ds.innerHTML = '<span style="color:var(--red)">Nessun dato valido. Controlla le colonne.</span>';
+      if (dz) dz.classList.add('err'); return;
+    }
+    saveAll();
+    if (dz) { dz.classList.remove('err'); dz.classList.add('ok'); }
+    if (ds) ds.innerHTML = `<span style="color:var(--green-ok)">✓ ${updated} atleti importati da "${file.name}"</span>`;
+    const badge=document.getElementById('wellBadge');
+    if(badge){badge.textContent=`✓ ${updated} atleti · ${new Date().toLocaleTimeString('it-IT')}`;badge.className='badge badge-green';}
+    ['dotWell','dotWell2'].forEach(id=>{const el=document.getElementById(id);if(el)el.className='sync-dot ok';});
+    // Preview
+    const prevDiv=document.getElementById('wellImportPreview');
+    const prevTbl=document.getElementById('wellPreviewTable');
+    if(prevDiv&&prevTbl){
+      prevDiv.style.display='block';
+      prevTbl.innerHTML=`<thead><tr><th>Nome foglio</th><th>Abbinato</th><th>Sonno</th><th>Dolori</th><th>Stanch.</th><th>Stress</th><th>Motiv.</th><th>HI/35</th></tr></thead><tbody>${
+        preview.map(r=>{
+          const cl=r.d.hi>=25?'badge-red':r.d.hi>=18?'badge-amber':'badge-green';
+          return `<tr><td style="font-size:10px;color:var(--gray-500)">${r.nome}</td><td><strong>${r.p}</strong></td><td style="text-align:center">${r.d.sleep}</td><td style="text-align:center">${r.d.muscle}</td><td style="text-align:center">${r.d.fatigue}</td><td style="text-align:center">${r.d.stress}</td><td style="text-align:center">${r.d.motivation}</td><td><span class="badge ${cl}">${r.d.hi}/35</span></td></tr>`;
+        }).join('')
+      }</tbody>`;
+    }
+    addSyncLog('Wellness CSV',''+updated+' atleti aggiornati',updated,'ok');
+    const ap=document.querySelector('.page.active')?.id;
+    if(ap) renderPage(ap);
+  };
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (ext==='csv') {
+    Papa.parse(file,{header:true,skipEmptyLines:true,complete:res=>processRows(res.data)});
+  } else if(['xlsx','xls'].includes(ext)) {
+    const reader=new FileReader();
+    reader.onload=ev=>{try{const wb=XLSX.read(ev.target.result,{type:'array'});const ws=wb.Sheets[wb.SheetNames[0]];processRows(XLSX.utils.sheet_to_json(ws,{defval:''}));}catch(e){if(ds)ds.textContent='Errore Excel';}};
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+function setupWellnessDZ() {
+  const dzone=document.getElementById('dz_wellness_forms');
+  if(!dzone) return;
+  dzone.addEventListener('dragover', e=>{e.preventDefault();dzone.classList.add('drag');});
+  dzone.addEventListener('dragleave',()=>dzone.classList.remove('drag'));
+  dzone.addEventListener('drop',e=>{
+    e.preventDefault();dzone.classList.remove('drag');
+    const f=e.dataTransfer.files[0];
+    if(f) handleWellnessImport(f);
+  });
+}
+
+function renderSync() { renderSyncLog(); renderMinOverrideGrid(); setupWellnessDZ(); }
 function renderSyncLog() {
   const el=document.getElementById('syncLog'); if(!el)return;
   if(!syncLogs.length){el.innerHTML='<tr><td colspan="4" style="text-align:center;padding:14px;color:var(--gray-400)">Nessuna sincronizzazione ancora</td></tr>';return;}
