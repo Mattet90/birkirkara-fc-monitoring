@@ -67,6 +67,7 @@ let S = { rpeData:{}, rpeSrc:{}, fcData:{}, wellData:{}, wellSrc:{}, gpsData:[] 
 /* ─── INIT ─── */
 function init() {
   document.getElementById('sessDate').value = new Date().toISOString().split('T')[0];
+  if(document.getElementById('sessMinutes')) document.getElementById('sessMinutes').addEventListener('input', renderMinOverrideGrid);
   const hasSaved = loadAll();
   if (!hasSaved) {
     // Prima apertura: genera dati demo
@@ -541,41 +542,84 @@ function connectWell() {
   addSyncLog('Wellness Forms','Collegato',0,'ok');
 }
 
+/* ─── CORS-safe CSV fetch ─── */
+async function fetchCSV(url) {
+  // Prova diretta prima (a volte funziona con CORS headers di Google)
+  try {
+    const r = await fetch(url, {mode:'cors'});
+    if (r.ok) { const t = await r.text(); if (t && t.length > 10) return t; }
+  } catch(e) {}
+  // Fallback: proxy allorigins per bypassare CORS
+  try {
+    const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+    const r = await fetch(proxy);
+    if (r.ok) { const d = await r.json(); return d.contents || ''; }
+  } catch(e) {}
+  // Fallback 2: corsproxy.io
+  try {
+    const proxy2 = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+    const r = await fetch(proxy2);
+    if (r.ok) return await r.text();
+  } catch(e) {}
+  return null;
+}
+
+function matchPlayer(rawName) {
+  const raw = rawName.toLowerCase().trim().replace(/\s+/g,' ');
+  // 1. Match esatto
+  let p = PLAYERS().find(pl => pl.toLowerCase().replace('.','').trim() === raw);
+  if (p) return p;
+  // 2. Match per ogni parola del nome (lunghezza > 2)
+  const rawParts = raw.split(' ').filter(x=>x.length>2);
+  p = PLAYERS().find(pl => {
+    const plParts = pl.toLowerCase().replace('.','').split(' ').filter(x=>x.length>2);
+    // Almeno due parole in comune O una parola lunga >4 in comune
+    const matches = plParts.filter(pp => rawParts.some(rp => pp.includes(rp)||rp.includes(pp)));
+    return matches.length >= 1 && (matches.length >= 2 || matches.some(m=>m.length>4));
+  });
+  if (p) return p;
+  // 3. Match cognome (prima parola del nome raw contro prima parola del player)
+  p = PLAYERS().find(pl => {
+    const plFirst = pl.toLowerCase().split(' ')[0];
+    const rawFirst = raw.split(' ')[0];
+    return plFirst === rawFirst && plFirst.length > 3;
+  });
+  return p || rawName;
+}
+
 async function syncAll() {
   const btn=document.getElementById('syncBtn');
   btn.innerHTML='<i class="ti ti-refresh spin"></i> Sync...'; btn.disabled=true;
   let rpeU=0, wellU=0;
   const md=document.getElementById('sessMD')?.value||'MD-1';
+  // Leggi minuti sessione globale
+  const sessMinGlobal = parseInt(document.getElementById('sessMinutes')?.value)||75;
+
   try {
-    const resp=await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vR4YuMaExxKAj4GzR3x4rGvvMd7aBb9nI6TmkvBo0udVbWjXLT9IedUK08BfklRjbmj-lyoxo3WWz6G/pub?gid=2015047575&single=true&output=csv');
-    if(resp.ok){
-      const rows=Papa.parse(await resp.text(),{header:true,skipEmptyLines:true}).data;
-      rows.forEach(row=>{
-        const keys=Object.keys(row);
-        const rawName=(row[keys[1]]||'').trim();
-        const rpeV=parseFloat(row[keys[2]])||0;
-        if(!rawName||!rpeV)return;
-        const rawLower=rawName.toLowerCase().trim();
-        // Cerca match nel roster: esatto, poi per parole del nome
-        let p=PLAYERS().find(pl=>pl.toLowerCase().replace('.','')===rawLower);
-        if(!p){
-          p=PLAYERS().find(pl=>{
-            const plClean=pl.toLowerCase().replace('.','');
-            const plParts=plClean.split(' ').filter(x=>x.length>2);
-            const rawParts=rawLower.split(' ').filter(x=>x.length>2);
-            return plParts.some(pp=>rawParts.some(rp=>pp.includes(rp)||rp.includes(pp)));
-          });
-        }
-        if(!p) p=rawName; // Atleta non in rosa: aggiunge come nuovo
-        if(!S.rpeData[p])S.rpeData[p]={};
-        if(!S.rpeSrc[p])S.rpeSrc[p]={};
-        const gpsRow=S.gpsData.find(g=>g.p===p);
-        const min=gpsRow?.min||75;
-        S.rpeData[p][md]={rpe:rpeV,min,tl:Math.round(rpeV*min)};
-        S.rpeSrc[p][md]='live'; rpeU++;
+    const csvText = await fetchCSV('https://docs.google.com/spreadsheets/d/e/2PACX-1vR4YuMaExxKAj4GzR3x4rGvvMd7aBb9nI6TmkvBo0udVbWjXLT9IedUK08BfklRjbmj-lyoxo3WWz6G/pub?gid=2015047575&single=true&output=csv');
+    if (csvText) {
+      const rows = Papa.parse(csvText, {header:true, skipEmptyLines:true}).data;
+      rows.forEach(row => {
+        const keys = Object.keys(row);
+        const rawName = (row[keys[1]]||'').trim();
+        const rpeV   = parseFloat(row[keys[2]])||0;
+        if (!rawName || !rpeV) return;
+        const p = matchPlayer(rawName);
+        if (!S.rpeData[p]) S.rpeData[p] = {};
+        if (!S.rpeSrc[p])  S.rpeSrc[p]  = {};
+        // Minuti: usa override individuale se presente, altrimenti GPS, altrimenti globale
+        const override = parseInt(document.getElementById('min_override_'+p.replace(/[^a-z0-9]/gi,'_'))?.value)||0;
+        const gpsRow   = S.gpsData.find(g=>g.p===p);
+        const min      = override || gpsRow?.min || sessMinGlobal;
+        S.rpeData[p][md] = {rpe:rpeV, min, tl:Math.round(rpeV*min)};
+        S.rpeSrc[p][md]  = 'live';
+        rpeU++;
       });
+      console.log(`RPE sync: ${rpeU} atleti aggiornati`);
+    } else {
+      console.warn('RPE CSV: nessun dato ricevuto');
     }
-  } catch(e){}
+  } catch(e) { console.error('RPE sync error:', e); }
   try {
     const resp=await fetch(`https://docs.google.com/spreadsheets/d/${WELL_SHEET_ID}/gviz/tq?tqx=out:csv`);
     if(resp.ok){
@@ -605,17 +649,53 @@ async function syncAll() {
 }
 
 function applySess() {
-  const tipo=document.getElementById('sessType').value;
-  const data=document.getElementById('sessDate').value;
-  const md=document.getElementById('sessMD').value;
-  addSyncLog('Sessione',`${tipo} · ${data} → ${md}`,PLAYERS().length,'ok');
-  alert(`✓ Sessione: ${tipo} del ${data} → ${md}\n\nAl prossimo Sincronizza le risposte RPE saranno attribuite a questa sessione.`);
+  const tipo = document.getElementById('sessType').value;
+  const data = document.getElementById('sessDate').value;
+  const md   = document.getElementById('sessMD').value;
+  const min  = document.getElementById('sessMinutes')?.value||75;
+  addSyncLog('Sessione', `${tipo} · ${data} · ${min}' → ${md}`, PLAYERS().length, 'ok');
+  // Aggiorna immediatamente i minuti nei TL esistenti di questo MD (senza sovrascrivere override)
+  PLAYERS().forEach(p => {
+    const override = parseInt(document.getElementById('min_override_'+p.replace(/[^a-z0-9]/gi,'_'))?.value)||0;
+    if (S.rpeData[p]?.[md] && !override) {
+      const gpsRow = S.gpsData.find(g=>g.p===p);
+      const newMin = gpsRow?.min || parseInt(min) || 75;
+      S.rpeData[p][md].min = newMin;
+      S.rpeData[p][md].tl  = Math.round(S.rpeData[p][md].rpe * newMin);
+    }
+  });
+  saveAll();
+  alert(`✓ Sessione impostata:\n${tipo} del ${data}\nDurata: ${min} minuti → ${md}\n\nPremi Sincronizza per caricare le risposte RPE.`);
 }
 function addSyncLog(fonte,stato,n,type) {
   syncLogs.unshift({ts:new Date().toLocaleString('it-IT'),fonte,stato,n,type});
   renderSyncLog();
 }
-function renderSync()    { renderSyncLog(); }
+
+/* ─── OVERRIDE MINUTI PER GIOCATORE ─── */
+function renderMinOverrideGrid() {
+  const grid = document.getElementById('minOverrideGrid');
+  if (!grid) return;
+  const globalMin = document.getElementById('sessMinutes')?.value || 75;
+  grid.innerHTML = ROSTER.sort((a,b)=>a.numero-b.numero).map(p => {
+    const key = (p.cognome+' '+p.nome.charAt(0)+'.').replace(/[^a-z0-9]/gi,'_');
+    const gpsRow = S.gpsData.find(g => g.p === p.cognome+' '+p.nome.charAt(0)+'.');
+    const gpsMin = gpsRow?.min || '';
+    const col = RUOLO_COLOR[p.ruolo]||'#637870';
+    return `<div style="display:flex;align-items:center;gap:6px;background:var(--white);border:1px solid var(--gray-200);border-radius:7px;padding:6px 8px">
+      <div style="width:28px;height:28px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0">${(p.nome.charAt(0)+p.cognome.charAt(0)).toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;font-weight:600;color:var(--gray-700);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.cognome} ${p.nome}</div>
+        <div style="font-size:9px;color:var(--gray-400)">${gpsMin ? 'GPS: '+gpsMin+''' : 'No GPS · Default: '+globalMin+'''}</div>
+      </div>
+      <input type="number" id="min_override_${key}" min="1" max="180" placeholder="${gpsMin||globalMin}"
+        style="width:52px;font-size:12px;padding:3px 5px;border:1.5px solid var(--gray-200);border-radius:5px;text-align:center;font-family:'DM Mono',monospace"
+        title="Override minuti per ${p.nome} ${p.cognome}">
+    </div>`;
+  }).join('');
+}
+
+function renderSync()    { renderSyncLog(); renderMinOverrideGrid(); }
 function renderSyncLog() {
   const el=document.getElementById('syncLog'); if(!el)return;
   if(!syncLogs.length){el.innerHTML='<tr><td colspan="4" style="text-align:center;padding:14px;color:var(--gray-400)">Nessuna sincronizzazione ancora</td></tr>';return;}
