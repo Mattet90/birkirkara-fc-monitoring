@@ -719,9 +719,13 @@ function renderOverview() {
     <div class="kpi-card ${avgHI>25?'c-red':avgHI>18?'c-amber':'c-primary'}"><div class="kpi-label">HI medio (5 dim.)</div><div class="kpi-value">${avgHI}</div><div class="kpi-sub">/ 35</div></div>
     <div class="kpi-card ${atRisk>3?'c-red':atRisk>1?'c-amber':'c-green'}"><div class="kpi-label">A rischio</div><div class="kpi-value">${atRisk}</div><div class="kpi-sub">ACWR fuori range</div></div>
     <div class="kpi-card c-green"><div class="kpi-label">RPE live</div><div class="kpi-value">${liveRPE}</div><div class="kpi-sub">/ ${PLAYERS().length} atleti</div></div>`;
-  const dayTotals=DAYS.map(d=>PLAYERS().reduce((s,p)=>s+(S.rpeData[p]?.[d]?.tl||0),0));
+  const playerCount = PLAYERS().length || 1;
+  const dayTotals=DAYS.map(d=>{
+    const vals = PLAYERS().map(p=>S.rpeData[p]?.[d]?.tl||0).filter(v=>v>0);
+    return vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
+  });
   destroyC('tlWeekChart');
-  charts.tlWeekChart=new Chart(document.getElementById('tlWeekChart'),{type:'bar',data:{labels:DAYS,datasets:[{label:'TL',data:dayTotals,backgroundColor:'#00A878',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},x:{ticks:{font:{size:11}}}}}});
+  charts.tlWeekChart=new Chart(document.getElementById('tlWeekChart'),{type:'bar',data:{labels:DAYS,datasets:[{label:'TL medio',data:dayTotals,backgroundColor:'#00A878',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},x:{ticks:{font:{size:11}}}}}});
   const acwrs=PLAYERS().map(p=>getACWR(p));
   destroyC('acwrChart');
   charts.acwrChart=new Chart(document.getElementById('acwrChart'),{type:'bar',data:{labels:PLAYERS().map(p=>p.split(' ')[0]),datasets:[{label:'ACWR',data:acwrs,backgroundColor:acwrs.map(v=>v>1.3?'#dc2626':v<0.8?'#1d4ed8':'#00A878'),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:2,ticks:{font:{size:10}}},x:{ticks:{font:{size:9}}}}}});
