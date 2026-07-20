@@ -4,7 +4,7 @@
 ═══════════════════════════════════════════════════════════════ */
 
 const RPE_CSV_PUBLIC = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR4YuMaExxKAj4GzR3x4rGvvMd7aBb9nI6TmkvBo0udVbWjXLT9IedUK08BfklRjbmj-lyoxo3WWz6G/pub?gid=2015047575&single=true&output=csv';
-const WELL_SHEET_ID = '1pOCUqz8usBdnt18N08Nd2XjMDgaxFN2FIu2HfPKAGqY';
+const WELL_CSV_PUBLIC = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSpbAUWImAhOSSwvG6CZ7woXv0J68KWiREFr9qnxEZJe8kcezIFGnAvRJ_PnyexI1YVS9L0ngCKLQkd/pub?gid=296283925&single=true&output=csv';
 
 /* ─── ROSTER ─── */
 let ROSTER = [
@@ -621,24 +621,34 @@ async function syncAll() {
     }
   } catch(e) { console.error('RPE sync error:', e); }
   try {
-    const resp=await fetch(`https://docs.google.com/spreadsheets/d/${WELL_SHEET_ID}/gviz/tq?tqx=out:csv`);
-    if(resp.ok){
-      const rows=Papa.parse(await resp.text(),{header:true,skipEmptyLines:true}).data;
-      rows.forEach(row=>{
-        const keys=Object.keys(row);
-        const nome=(row[keys[1]]||'').trim(); if(!nome)return;
-        const p=PLAYERS().find(pl=>pl.toLowerCase()===nome.toLowerCase())||nome;
-        if(!S.wellData[p])S.wellData[p]={sleep:3,muscle:3,fatigue:3,stress:3,motivation:3,hi:15};
-        S.wellData[p].sleep    =parseInt(row[keys[2]])||S.wellData[p].sleep;
-        S.wellData[p].muscle   =parseInt(row[keys[3]])||S.wellData[p].muscle;
-        S.wellData[p].fatigue  =parseInt(row[keys[4]])||S.wellData[p].fatigue;
-        S.wellData[p].stress   =parseInt(row[keys[5]])||S.wellData[p].stress;
-        S.wellData[p].motivation=parseInt(row[keys[6]])||S.wellData[p].motivation;
-        S.wellData[p].hi=WDIMS.reduce((s,k)=>s+S.wellData[p][k],0);
-        S.wellSrc[p]='live'; wellU++;
+    const wellCsvText = await fetchCSV('https://docs.google.com/spreadsheets/d/e/2PACX-1vSpbAUWImAhOSSwvG6CZ7woXv0J68KWiREFr9qnxEZJe8kcezIFGnAvRJ_PnyexI1YVS9L0ngCKLQkd/pub?gid=296283925&single=true&output=csv');
+    if (wellCsvText) {
+      const rows = Papa.parse(wellCsvText, {header:true, skipEmptyLines:true}).data;
+      rows.forEach(row => {
+        const keys = Object.keys(row);
+        // Col A=timestamp, B=nome, C=sonno, D=dolori, E=stanchezza, F=stress, G=motivazione
+        const rawName = (row[keys[1]]||'').trim();
+        if (!rawName) return;
+        const p = matchPlayer(rawName);
+        if (!S.wellData[p]) S.wellData[p] = {sleep:3,muscle:3,fatigue:3,stress:3,motivation:3,hi:15};
+        const v = (i) => {
+          const val = parseInt(row[keys[i]]);
+          return (!isNaN(val) && val>=1 && val<=7) ? val : null;
+        };
+        if (v(2)!==null) S.wellData[p].sleep      = v(2);
+        if (v(3)!==null) S.wellData[p].muscle     = v(3);
+        if (v(4)!==null) S.wellData[p].fatigue    = v(4);
+        if (v(5)!==null) S.wellData[p].stress     = v(5);
+        if (v(6)!==null) S.wellData[p].motivation = v(6);
+        S.wellData[p].hi = WDIMS.reduce((s,k)=>s+S.wellData[p][k], 0);
+        S.wellSrc[p] = 'live';
+        wellU++;
       });
+      console.log(`Wellness sync: ${wellU} atleti aggiornati`);
+    } else {
+      console.warn('Wellness CSV: nessun dato ricevuto (403 - verifica pubblicazione foglio)');
     }
-  } catch(e){}
+  } catch(e) { console.error('Wellness sync error:', e); }
   saveAll();
   document.getElementById('lastSync').textContent='Sync: '+new Date().toLocaleTimeString('it-IT');
   addSyncLog('RPE Forms',   rpeU>0?`${rpeU} atleti aggiornati`:'Foglio vuoto', rpeU,  rpeU>0?'ok':'wait');
