@@ -609,7 +609,7 @@ tbody tr:nth-child(even):hover td { background: var(--primary-l); }
       <div class="sheet-panel">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
           <i class="ti ti-activity" style="font-size:20px;color:var(--primary-d)"></i>
-          <strong style="font-size:14px;color:var(--primary-d)">Foglio RPE — Forms 2026/27</strong>
+          <strong style="font-size:14px;color:var(--primary-d)">Foglio RPE — Birkirkara FC 2026/27</strong>
           <span id="rpeBadge" class="badge badge-gray" style="margin-left:auto">Non connesso</span>
         </div>
         <div style="font-size:11px;color:var(--primary-d);margin-bottom:10px;line-height:1.7">
@@ -627,8 +627,29 @@ tbody tr:nth-child(even):hover td { background: var(--primary-l); }
             <div class="form-group"><label>Tipo sessione</label><select id="sessType"><option>Allenamento</option><option>Partita</option><option>Amichevole</option><option>Test fisico</option></select></div>
             <div class="form-group"><label>Data</label><input type="date" id="sessDate"></div>
             <div class="form-group"><label>Giorno MD</label><select id="sessMD"><option>MD+1</option><option>MD+2</option><option>MD+3</option><option>MD-3</option><option>MD-2</option><option>MD-1</option><option>MD</option></select></div>
+            <div class="form-group">
+              <label>⏱ Minuti sessione</label>
+              <input type="number" id="sessMinutes" min="1" max="180" value="75" placeholder="75" style="font-weight:600">
+              <div style="font-size:9px;color:var(--gray-400);margin-top:3px">Durata default per tutti i giocatori</div>
+            </div>
           </div>
-          <button class="btn btn-yellow" onclick="applySess()"><i class="ti ti-check"></i> Imposta sessione</button>
+
+          <!-- Override minuti per giocatore -->
+          <div style="margin-top:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+              <span style="font-size:10px;font-weight:700;color:var(--primary-d);text-transform:uppercase;letter-spacing:.4px">Override minuti per giocatore</span>
+              <span style="font-size:9px;color:var(--gray-400)">Lascia vuoto per usare il valore globale</span>
+            </div>
+            <div id="minOverrideGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;max-height:220px;overflow-y:auto;padding:2px"></div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+            <button class="btn btn-yellow" onclick="applySess()"><i class="ti ti-check"></i> Imposta sessione</button>
+            <button class="btn" onclick="syncAll()" style="border-color:var(--primary);color:var(--primary)"><i class="ti ti-refresh"></i> Sincronizza ora</button>
+          </div>
+          <div style="font-size:10px;color:var(--gray-400);margin-top:6px">
+            TL = RPE (dal Forms) × Minuti (override → GPS → valore globale)
+          </div>
         </div>
       </div>
       <div class="sheet-panel">
