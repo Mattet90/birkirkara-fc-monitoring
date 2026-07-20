@@ -613,11 +613,11 @@ tbody tr:nth-child(even):hover td { background: var(--primary-l); }
           <span id="rpeBadge" class="badge badge-gray" style="margin-left:auto">Non connesso</span>
         </div>
         <div style="font-size:11px;color:var(--primary-d);margin-bottom:10px;line-height:1.7">
-          <strong>Col. A</strong>=Data/ora &nbsp;·&nbsp; <strong>Col. B</strong>=Nome Cognome &nbsp;·&nbsp; <strong>Col. C</strong>=RPE (0–10 Foster)
+          <strong>Col. A</strong>=Data/ora &nbsp;·&nbsp; <strong>Col. B</strong>=SURNAME and NAME &nbsp;·&nbsp; <strong>Col. C</strong>=RPE (0–10) &nbsp;·&nbsp; <span style="color:var(--green-ok);font-weight:700">✓ URL CSV pubblico configurato</span>
         </div>
         <div class="sheet-row">
           <span class="sync-dot" id="dotRPE2"></span>
-          <input type="text" id="rpeUrl" value="https://docs.google.com/spreadsheets/d/1CgUuCPakmhgif-cIJI0PSeFqvFQy-QBFldpGfr9A1KE/edit?usp=sharing" placeholder="URL Google Sheets RPE">
+          <input type="text" id="rpeUrl" value="https://docs.google.com/spreadsheets/d/e/2PACX-1vR4YuMaExxKAj4GzR3x4rGvvMd7aBb9nI6TmkvBo0udVbWjXLT9IedUK08BfklRjbmj-lyoxo3WWz6G/pub?gid=2015047575&single=true&output=csv" placeholder="URL CSV pubblico Google Sheets RPE">
           <button class="btn btn-primary" onclick="connectRPE()"><i class="ti ti-plug"></i> Collega</button>
         </div>
         <div id="rpeConnInfo" class="sheet-info" style="display:none">✓ Collegato. <span style="color:var(--amber)">⚠ Foglio vuoto — in attesa risposte.</span></div>
