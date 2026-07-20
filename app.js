@@ -3,7 +3,7 @@
    app.js v2.0 – Roster Management + Google Forms Sync
 ═══════════════════════════════════════════════════════════════ */
 
-const RPE_SHEET_ID  = '1CgUuCPakmhgif-cIJI0PSeFqvFQy-QBFldpGfr9A1KE';
+const RPE_CSV_PUBLIC = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR4YuMaExxKAj4GzR3x4rGvvMd7aBb9nI6TmkvBo0udVbWjXLT9IedUK08BfklRjbmj-lyoxo3WWz6G/pub?gid=2015047575&single=true&output=csv';
 const WELL_SHEET_ID = '1pOCUqz8usBdnt18N08Nd2XjMDgaxFN2FIu2HfPKAGqY';
 
 /* ─── ROSTER ─── */
@@ -547,14 +547,26 @@ async function syncAll() {
   let rpeU=0, wellU=0;
   const md=document.getElementById('sessMD')?.value||'MD-1';
   try {
-    const resp=await fetch(`https://docs.google.com/spreadsheets/d/${RPE_SHEET_ID}/gviz/tq?tqx=out:csv`);
+    const resp=await fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vR4YuMaExxKAj4GzR3x4rGvvMd7aBb9nI6TmkvBo0udVbWjXLT9IedUK08BfklRjbmj-lyoxo3WWz6G/pub?gid=2015047575&single=true&output=csv');
     if(resp.ok){
       const rows=Papa.parse(await resp.text(),{header:true,skipEmptyLines:true}).data;
       rows.forEach(row=>{
         const keys=Object.keys(row);
-        const nome=(row[keys[1]]||'').trim(); const rpeV=parseFloat(row[keys[2]])||0;
-        if(!nome||!rpeV)return;
-        const p=PLAYERS().find(pl=>pl.toLowerCase()===nome.toLowerCase())||nome;
+        const rawName=(row[keys[1]]||'').trim();
+        const rpeV=parseFloat(row[keys[2]])||0;
+        if(!rawName||!rpeV)return;
+        const rawLower=rawName.toLowerCase().trim();
+        // Cerca match nel roster: esatto, poi per parole del nome
+        let p=PLAYERS().find(pl=>pl.toLowerCase().replace('.','')===rawLower);
+        if(!p){
+          p=PLAYERS().find(pl=>{
+            const plClean=pl.toLowerCase().replace('.','');
+            const plParts=plClean.split(' ').filter(x=>x.length>2);
+            const rawParts=rawLower.split(' ').filter(x=>x.length>2);
+            return plParts.some(pp=>rawParts.some(rp=>pp.includes(rp)||rp.includes(pp)));
+          });
+        }
+        if(!p) p=rawName; // Atleta non in rosa: aggiunge come nuovo
         if(!S.rpeData[p])S.rpeData[p]={};
         if(!S.rpeSrc[p])S.rpeSrc[p]={};
         const gpsRow=S.gpsData.find(g=>g.p===p);
