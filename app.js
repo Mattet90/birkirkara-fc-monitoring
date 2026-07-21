@@ -130,7 +130,14 @@ function rnd(v,d=1) { return parseFloat((+v).toFixed(d)); }
 function rv(a,b)    { return rnd(a + Math.random()*(b-a)); }
 function destroyC(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
 function getTL(p)     { return Object.values(S.rpeData[p]||{}).reduce((s,d)=>s+d.tl,0); }
-function totalTL()    { return PLAYERS().reduce((s,p)=>s+getTL(p),0); }
+function totalTL() {
+  // Media delle medie giornaliere (solo giorni e atleti con dati reali)
+  const dayAvgs = DAYS.map(d => {
+    const vals = PLAYERS().map(p => S.rpeData[p]?.[d]?.tl || 0).filter(v => v > 0);
+    return vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
+  }).filter(v => v > 0);
+  return dayAvgs.length ? Math.round(dayAvgs.reduce((a,b) => a+b, 0) / dayAvgs.length) : 0;
+}
 function getMonotony(p) {
   const tls = Object.values(S.rpeData[p]||{}).map(d=>d.tl);
   const avg = tls.reduce((a,b)=>a+b,0)/tls.length;
@@ -984,7 +991,7 @@ function renderOverview() {
   const atRisk=PLAYERS().filter(p=>getACWR(p)>1.3||getACWR(p)<0.8).length;
   const liveRPE=PLAYERS().filter(p=>Object.values(S.rpeSrc[p]||{}).some(s=>s==='live')).length;
   document.getElementById('kpiGrid').innerHTML=`
-    <div class="kpi-card c-primary"><div class="kpi-label">TL Totale Squadra</div><div class="kpi-value">${tot.toLocaleString()}</div><div class="kpi-sub">UA settimanale</div></div>
+    <div class="kpi-card c-primary"><div class="kpi-label">TL medio giornaliero</div><div class="kpi-value">${tot}</div><div class="kpi-sub">media sett. squadra</div></div>
     <div class="kpi-card ${(avgACWR>1.3||avgACWR<0.8)?'c-amber':'c-primary'}"><div class="kpi-label">ACWR medio</div><div class="kpi-value">${avgACWR}</div><div class="kpi-sub">ottimale 0.8–1.3</div></div>
     <div class="kpi-card c-blue"><div class="kpi-label">RPE medio</div><div class="kpi-value">${avgRPE}</div><div class="kpi-sub">0–10 Foster</div></div>
     <div class="kpi-card ${avgHI>25?'c-red':avgHI>18?'c-amber':'c-primary'}"><div class="kpi-label">HI medio (5 dim.)</div><div class="kpi-value">${avgHI}</div><div class="kpi-sub">/ 35</div></div>
@@ -1168,16 +1175,16 @@ function renderACWR() {
   document.getElementById('acwrKpi').innerHTML=`
     <div class="kpi-card ${(avg>1.3||avg<0.8)?'c-amber':'c-primary'}"><div class="kpi-label">ACWR medio</div><div class="kpi-value">${avg}</div><div class="kpi-sub">ottimale 0.8–1.3</div></div>
     <div class="kpi-card ${atRisk>3?'c-red':atRisk>1?'c-amber':'c-green'}"><div class="kpi-label">A rischio</div><div class="kpi-value">${atRisk}</div></div>
-    <div class="kpi-card c-blue"><div class="kpi-label">TL Totale</div><div class="kpi-value">${tot.toLocaleString()}</div><div class="kpi-sub">UA squadra</div></div>`;
+    <div class="kpi-card c-blue"><div class="kpi-label">TL medio/giorno</div><div class="kpi-value">${tot}</div><div class="kpi-sub">media sett. squadra</div></div>`;
   destroyC('acwrPlayerChart');
   charts.acwrPlayerChart=new Chart(document.getElementById('acwrPlayerChart'),{type:'bar',data:{labels:PLAYERS().map(p=>p.split(' ')[0]),datasets:[{label:'ACWR',data:acwrs,backgroundColor:acwrs.map(v=>v>1.3?'#dc2626':v<0.8?'#1d4ed8':'#00A878'),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:2,ticks:{font:{size:10}}},x:{ticks:{font:{size:9}}}}}});
   document.getElementById('pctBars').innerHTML=PLAYERS().map(p=>{
-    const tl=getTL(p); const pct=rnd(tl/tot*100,1);
+    const tl=getTL(p); const teamWeekTL=PLAYERS().reduce((s,pl)=>s+getTL(pl),0)||1; const pct=rnd(tl/teamWeekTL*100,1);
     const clr=pct>10?'#dc2626':pct>7?'#F5C518':'#00A878';
     return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:7px;font-size:12px"><span style="min-width:85px;color:var(--gray-700)">${p}</span><div class="pct-bar"><div class="pct-fill" style="width:${Math.min(pct*6,100)}%;background:${clr}"></div></div><span style="min-width:90px;text-align:right;color:var(--gray-500);font-family:'DM Mono',monospace;font-size:11px">${tl} UA · ${pct}%</span></div>`;
   }).join('');
   document.getElementById('acwrBody').innerHTML=PLAYERS().map(p=>{
-    const tl=getTL(p); const pct=rnd(tl/tot*100,1); const acwr=getACWR(p);
+    const tl=getTL(p); const teamWeekTL=PLAYERS().reduce((s,pl)=>s+getTL(pl),0)||1; const pct=rnd(tl/teamWeekTL*100,1); const acwr=getACWR(p);
     const mon=getMonotony(p); const fat=getFatigue(p);
     const tls=Object.values(S.rpeData[p]||{}).map(d=>d.tl);
     const avg2=rnd(tls.reduce((a,b)=>a+b,0)/tls.length);
