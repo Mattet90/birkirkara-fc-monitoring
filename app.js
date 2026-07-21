@@ -48,7 +48,7 @@ const DAYS   = ['MD+1','MD+2','MD+3','MD-3','MD-2','MD-1','MD'];
 function dayAvgRPE(d) {
   // RPE medio squadra per un giorno: media degli atleti con RPE > 0
   const vals = PLAYERS().map(p => S.rpeData[p]?.[d]?.rpe || 0).filter(v => v > 0);
-  return vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
+  return vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
 }
 function dayAvgMin(d) {
   // Minuti medi squadra per un giorno: media degli atleti con minuti > 0
@@ -66,7 +66,7 @@ function weeklySquadTL() {
 function weeklyAvgRPE() {
   // RPE medio settimanale = media dei RPE medi giornalieri (solo giorni con dati)
   const days = DAYS.map(d => dayAvgRPE(d)).filter(v => v > 0);
-  return days.length ? rnd(days.reduce((a,b) => a+b, 0) / days.length) : 0;
+  return days.length ? Math.round(days.reduce((a,b) => a+b, 0) / days.length) : 0;
 }
 const WDIMS  = ['sleep','muscle','fatigue','stress','motivation'];
 const WLBLS  = ['Sonno','Dolori','Stanchezza','Stress','Motivazione'];
@@ -1007,7 +1007,7 @@ function renderOverview() {
   const tot=totalTL();
   const avgACWR=rnd(PLAYERS().reduce((s,p)=>s+getACWR(p),0)/PLAYERS().length);
   const avgHI=rnd(PLAYERS().reduce((s,p)=>s+(S.wellData[p]?.hi||0),0)/PLAYERS().length);
-  const avgRPE=rnd(PLAYERS().reduce((s,p)=>s+Object.values(S.rpeData[p]||{}).reduce((a,d)=>a+d.rpe,0)/DAYS.length,0)/PLAYERS().length);
+  const avgRPE=Math.round(PLAYERS().reduce((s,p)=>{const v=Object.values(S.rpeData[p]||{}).map(d=>d.rpe).filter(r=>r>0);return s+(v.length?v.reduce((a,b)=>a+b,0)/v.length:0);},0)/PLAYERS().length);
   const atRisk=PLAYERS().filter(p=>getACWR(p)>1.3||getACWR(p)<0.8).length;
   const liveRPE=PLAYERS().filter(p=>Object.values(S.rpeSrc[p]||{}).some(s=>s==='live')).length;
   // Calcoli corretti per overview
@@ -1099,13 +1099,190 @@ function renderOverview() {
 /* ═══════════════════════════════════════════
    RPE & TL
 ═══════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════
+   GRIGLIA RPE GIORNALIERA
+   Riga = giocatore, Colonna = giorno MD
+   Input diretto in ogni cella + TL live
+═══════════════════════════════════════════ */
+function renderRPEGrid() {
+  const container = document.getElementById('rpeGridContainer');
+  if (!container) return;
+
+  const sessMin = parseInt(document.getElementById('sessMinutes')?.value) || 75;
+
+  // Intestazione
+  let html = `
+  <div style="overflow-x:auto;border-radius:10px;border:1px solid var(--gray-200)">
+  <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:700px">
+    <thead>
+      <tr style="background:linear-gradient(135deg,var(--primary-d),var(--primary))">
+        <th style="padding:9px 12px;text-align:left;color:var(--yellow);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;position:sticky;left:0;background:var(--primary-d);min-width:130px">Giocatore</th>
+        <th style="padding:9px 12px;text-align:left;color:var(--yellow);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;min-width:50px">Ruolo</th>
+        ${DAYS.map(d => `<th style="padding:9px 10px;text-align:center;color:var(--yellow);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;min-width:80px">${d}</th>`).join('')}
+        <th style="padding:9px 10px;text-align:center;color:var(--yellow);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;min-width:70px">RPE med</th>
+        <th style="padding:9px 10px;text-align:center;color:var(--yellow);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;min-width:80px">TL sett.</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  ROSTER.sort((a,b) => {
+    const order = ['POR','DC','TER','MED','CC','MEZ','ALA','TRA','ATT','SEC'];
+    return (order.indexOf(a.ruolo)||99) - (order.indexOf(b.ruolo)||99) || a.numero - b.numero;
+  }).forEach((player, idx) => {
+    const p    = player.cognome + ' ' + player.nome.charAt(0) + '.';
+    const col  = RUOLO_COLOR[player.ruolo] || '#637870';
+    const data = S.rpeData[p] || {};
+    const src  = S.rpeSrc[p]  || {};
+
+    const rpeVals = DAYS.map(d => data[d]?.rpe || 0).filter(v => v > 0);
+    const avgRPE  = rpeVals.length ? Math.round(rpeVals.reduce((a,b)=>a+b,0)/rpeVals.length) : 0;
+    const tlTot   = DAYS.reduce((s,d) => s + (data[d]?.tl||0), 0);
+
+    const rowBg = idx % 2 === 0 ? '#fff' : '#f5fbf8';
+    const stBadge = player.stato !== 'Disponibile'
+      ? `<span style="font-size:8px;padding:1px 4px;border-radius:3px;background:${player.stato==='Infortunato'?'#fee2e2':player.stato==='In recupero'?'#fef3c7':'#dbeafe'};color:${player.stato==='Infortunato'?'#991b1b':player.stato==='In recupero'?'#78350f':'#1e3a8a'};margin-left:3px">${player.stato}</span>`
+      : '';
+
+    html += `<tr style="background:${rowBg}">
+      <td style="padding:7px 12px;font-weight:600;color:var(--gray-700);position:sticky;left:0;background:${rowBg};border-bottom:1px solid var(--gray-100)">
+        <div style="display:flex;align-items:center;gap:6px">
+          ${player.photo ? `<img src="${player.photo}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;border:1px solid ${col};flex-shrink:0">` : `<div style="width:22px;height:22px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0">${(player.nome.charAt(0)+player.cognome.charAt(0)).toUpperCase()}</div>`}
+          <span>${player.cognome} ${player.nome}</span>${stBadge}
+        </div>
+      </td>
+      <td style="padding:7px 8px;border-bottom:1px solid var(--gray-100)">
+        <span style="background:${col}22;color:${col};font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px">${player.ruolo||'—'}</span>
+      </td>
+      ${DAYS.map(d => {
+        const entry  = data[d] || {rpe:0,min:0,tl:0};
+        const isLive = src[d] === 'live';
+        const hasVal = entry.rpe > 0;
+        const rpeCol = entry.rpe >= 8 ? '#dc2626' : entry.rpe >= 6 ? '#d97706' : entry.rpe >= 4 ? '#00A878' : entry.rpe > 0 ? '#0891b2' : '';
+        const cellId = 'rpe_' + p.replace(/[^a-z0-9]/gi,'_') + '_' + d.replace(/[^a-z0-9]/gi,'_');
+        return `<td style="padding:4px 6px;text-align:center;border-bottom:1px solid var(--gray-100)">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+            <div style="position:relative;display:inline-flex;align-items:center">
+              <input type="number" id="${cellId}"
+                min="0" max="10" step="1"
+                value="${hasVal ? entry.rpe : ''}"
+                placeholder="—"
+                ${player.stato === 'Infortunato' ? 'disabled' : ''}
+                style="width:46px;text-align:center;padding:4px 2px;border:1.5px solid ${hasVal ? rpeCol : 'var(--gray-200)'};border-radius:6px;font-size:13px;font-weight:${hasVal?'700':'400'};color:${hasVal?rpeCol:'var(--gray-400)'};background:${hasVal?rpeCol+'11':'var(--white)'};font-family:'DM Mono',monospace;outline:none"
+                oninput="updateRPECell('${p}','${d}',this.value)"
+                onfocus="this.select()"
+              >
+              ${isLive ? '<span style="position:absolute;top:-3px;right:-3px;width:6px;height:6px;border-radius:50%;background:#16a34a;border:1px solid #fff"></span>' : ''}
+            </div>
+            ${hasVal ? `<span id="rpeTLCell_${p.replace(/[^a-z0-9]/gi,'_')}_${d.replace(/[^a-z0-9]/gi,'_')}" style="font-size:8px;color:var(--gray-400);font-family:'DM Mono',monospace">${entry.tl||0}</span>` : `<span id="rpeTLCell_${p.replace(/[^a-z0-9]/gi,'_')}_${d.replace(/[^a-z0-9]/gi,'_')}"></span>`}
+          </div>
+        </td>`;
+      }).join('')}
+      <td style="padding:7px 8px;text-align:center;border-bottom:1px solid var(--gray-100)">
+        <strong id="rpeAvgPlayer_${p.replace(/[^a-z0-9]/gi,'_')}" style="font-family:'DM Mono',monospace;font-size:14px;color:${avgRPE>=8?'#dc2626':avgRPE>=6?'#d97706':'var(--primary)'}">${avgRPE||'—'}</strong>
+      </td>
+      <td style="padding:7px 8px;text-align:center;border-bottom:1px solid var(--gray-100)">
+        <span id="rpeTLPlayer_${p.replace(/[^a-z0-9]/gi,'_')}" style="font-family:'DM Mono',monospace;font-size:12px;color:var(--gray-700)">${tlTot||'—'}</span>
+      </td>
+    </tr>`;
+  });
+
+  // Riga totali: RPE medio e TL medio giornaliero squadra
+  html += `<tr style="background:linear-gradient(135deg,var(--primary-l),#f0fbf8);border-top:2px solid var(--primary)">
+    <td style="padding:8px 12px;font-weight:700;color:var(--primary-d);position:sticky;left:0;background:var(--primary-l)" colspan="2">Media squadra</td>
+    ${DAYS.map(d => {
+      const avgR = dayAvgRPE(d);
+      const tld  = dayTL(d);
+      return `<td id="rpeAvgCell_${d.replace(/[^a-z0-9]/gi,'_')}" style="padding:8px 6px;text-align:center">
+        ${avgR > 0 ? `<div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${avgR>=8?'#dc2626':avgR>=6?'#d97706':'var(--primary)'};">${avgR}</div><div style="font-size:8px;color:var(--gray-400)">${tld} UA</div>` : '<span style="color:var(--gray-300)">—</span>'}
+      </td>`;
+    }).join('')}
+    <td style="padding:8px;text-align:center;font-weight:700;color:var(--primary);font-family:'DM Mono',monospace"><span id="rpeSquadRPE">${weeklyAvgRPE()||'—'}</span></td>
+    <td style="padding:8px;text-align:center;font-weight:700;color:var(--primary);font-family:'DM Mono',monospace"><span id="rpeSquadTL">${weeklySquadTL().toLocaleString()}</span></td>
+  </tr>`;
+
+  html += '</tbody></table></div>';
+  container.innerHTML = html;
+}
+
+function updateRPECell(player, day, val) {
+  const rpe = parseInt(val);
+  if (!S.rpeData[player])  S.rpeData[player] = {};
+  if (!S.rpeSrc[player])   S.rpeSrc[player]  = {};
+
+  if (!val || isNaN(rpe) || rpe < 0) {
+    // Cancella il valore
+    S.rpeData[player][day] = {rpe:0, min:0, tl:0};
+    S.rpeSrc[player][day]  = 'demo';
+  } else {
+    const clampedRPE = Math.min(10, Math.max(0, rpe));
+    const override   = parseInt(document.getElementById('min_override_' + player.replace(/[^a-z0-9]/gi,'_'))?.value) || 0;
+    const gpsRow     = S.gpsData.find(g => g.p === player);
+    const sessMin    = parseInt(document.getElementById('sessMinutes')?.value) || 75;
+    const min        = override || gpsRow?.min || sessMin;
+    S.rpeData[player][day] = {rpe:clampedRPE, min, tl: Math.round(clampedRPE * min)};
+    S.rpeSrc[player][day]  = 'manual';
+  }
+
+  saveAll();
+
+  // Aggiorna solo la riga totale senza ridisegnare tutta la griglia (evita perdita focus)
+  const totRow = document.getElementById('rpeGridTotals');
+  if (totRow) {
+    DAYS.forEach((d, i) => {
+      const avgR = dayAvgRPE(d);
+      const tld  = dayTL(d);
+      const cell = document.getElementById('rpeAvgCell_' + d.replace(/[^a-z0-9]/gi,'_'));
+      if (!cell) return;
+      cell.innerHTML = avgR > 0
+        ? `<div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${avgR>=8?'#dc2626':avgR>=6?'#d97706':'var(--primary)'};">${avgR}</div><div style="font-size:8px;color:var(--gray-400)">${tld} UA</div>`
+        : '<span style="color:var(--gray-300)">—</span>';
+    });
+  }
+
+  // Aggiorna TL e avg cella-per-cella senza re-render
+  const p = player;
+  const data2 = S.rpeData[p] || {};
+  const rpeVals2 = DAYS.map(d2 => data2[d2]?.rpe || 0).filter(v => v > 0);
+  const newAvg = rpeVals2.length ? Math.round(rpeVals2.reduce((a,b)=>a+b,0)/rpeVals2.length) : 0;
+  const newTLtot = DAYS.reduce((s,d2) => s + (data2[d2]?.tl||0), 0);
+
+  // Aggiorna la riga media in fondo senza re-render completo
+  DAYS.forEach(d => {
+    const avgR = dayAvgRPE(d);
+    const tld  = dayTL(d);
+    const el   = document.getElementById('rpeAvgCell_' + d.replace(/[^a-z0-9]/gi,'_'));
+    if (el) el.innerHTML = avgR > 0
+      ? `<div style="font-family:'DM Mono',monospace;font-size:13px;font-weight:700;color:${avgR>=8?'#dc2626':avgR>=6?'#d97706':'var(--primary-d)'};">${avgR}</div><div style="font-size:8px;color:var(--gray-400)">${tld} UA</div>`
+      : '<span style="color:var(--gray-300)">—</span>';
+  });
+  // Aggiorna avg e TL della riga giocatore
+  const rVals2 = DAYS.map(d2 => (S.rpeData[player]?.[d2]?.rpe||0)).filter(v=>v>0);
+  const updAvg = rVals2.length ? Math.round(rVals2.reduce((a,b)=>a+b,0)/rVals2.length) : 0;
+  const updTL  = DAYS.reduce((s,d2)=>s+(S.rpeData[player]?.[d2]?.tl||0),0);
+  const avgEl = document.getElementById('rpeAvgPlayer_' + player.replace(/[^a-z0-9]/gi,'_'));
+  if (avgEl) avgEl.textContent = updAvg || '—';
+  const tlEl  = document.getElementById('rpeTLPlayer_' + player.replace(/[^a-z0-9]/gi,'_'));
+  if (tlEl)  tlEl.textContent  = updTL  || '—';
+  // Aggiorna il sotto-valore TL della cella corrente
+  const tlCellEl = document.getElementById('rpeTLCell_' + player.replace(/[^a-z0-9]/gi,'_') + '_' + day.replace(/[^a-z0-9]/gi,'_'));
+  const newTLcell = S.rpeData[player]?.[day]?.tl || 0;
+  if (tlCellEl) tlCellEl.textContent = newTLcell > 0 ? newTLcell : '';
+  // Aggiorna totale squadra
+  const sqTLel = document.getElementById('rpeSquadTL');
+  if (sqTLel) sqTLel.textContent = weeklySquadTL().toLocaleString();
+  const sqRPEel = document.getElementById('rpeSquadRPE');
+  if (sqRPEel) sqRPEel.textContent = weeklyAvgRPE() || '—';
+}
+
 function renderRPE() {
+  renderRPEGrid(); // Aggiorna griglia giornaliera
   const sel=document.getElementById('rpePlayer').value||PLAYERS()[0];
   const data=S.rpeData[sel]||{};
   const tot=getTL(sel); const mon=getMonotony(sel); const fat=getFatigue(sel);
   // RPE medio solo sui giorni con dato inserito
   const rpeVals = DAYS.map(d => data[d]?.rpe || 0).filter(v => v > 0);
-  const avgR = rpeVals.length ? rnd(rpeVals.reduce((a,b)=>a+b,0)/rpeVals.length) : 0;
+  const avgR = rpeVals.length ? Math.round(rpeVals.reduce((a,b)=>a+b,0)/rpeVals.length) : 0;
   const daysIn = rpeVals.length;
   document.getElementById('rpeKpi').innerHTML=`
     <div class="kpi-card c-primary"><div class="kpi-label">TL Totale (${sel})</div><div class="kpi-value">${tot}</div><div class="kpi-sub">UA sett. · ${daysIn} sessioni</div></div>
@@ -1118,7 +1295,7 @@ function renderRPE() {
   document.getElementById('rpeTableBody').innerHTML=PLAYERS().map(p=>{
     const d=S.rpeData[p]||{}; const ptl=getTL(p);
     const rpeDays=DAYS.map(day=>d[day]?.rpe||0).filter(v=>v>0);
-    const prpe=rpeDays.length?rnd(rpeDays.reduce((a,b)=>a+b,0)/rpeDays.length):0;
+    const prpe=rpeDays.length?Math.round(rpeDays.reduce((a,b)=>a+b,0)/rpeDays.length):0;
     const hasL=Object.values(S.rpeSrc[p]||{}).some(s=>s==='live');
     const rp2=ROSTER.find(r=>r.cognome+' '+r.nome.charAt(0)+'.'===p);
     const thumbHtml = rp2?.photo
