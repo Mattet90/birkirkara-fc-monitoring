@@ -87,7 +87,8 @@ let wellInput = {sleep:0,muscle:0,fatigue:0,stress:0,motivation:0};
 let curITab = 'gps';
 const parsedFiles = {};
 
-let S = { rpeData:{}, rpeSrc:{}, fcData:{}, wellData:{}, wellSrc:{}, gpsData:[] };
+let S = { rpeData:{}, rpeSrc:{}, fcData:{}, wellData:{}, wellSrc:{}, gpsData:[], sessCalendar:{} };
+// sessCalendar: { "YYYY-MM-DD": "MD-1", "YYYY-MM-DD": "MD", ... }
 
 /* ─── INIT ─── */
 function init() {
@@ -251,6 +252,7 @@ function saveAll() {
     localStorage.setItem(LS.WELL,     JSON.stringify(S.wellData));
     localStorage.setItem(LS.WELL_SRC, JSON.stringify(S.wellSrc));
     localStorage.setItem(LS.GPS,      JSON.stringify(S.gpsData));
+    localStorage.setItem('bkk_cal',    JSON.stringify(S.sessCalendar));
     localStorage.setItem(LS.ID_CTR,   String(rosterIdCounter));
     localStorage.setItem('bkk_version', APP_VERSION);
   } catch(e) {
@@ -294,6 +296,8 @@ function loadAll() {
 
     const savedGps = localStorage.getItem(LS.GPS);
     if (savedGps) S.gpsData = JSON.parse(savedGps);
+    const savedCal = localStorage.getItem('bkk_cal');
+    if (savedCal) S.sessCalendar = JSON.parse(savedCal);
 
     return !!savedRoster; // true = dati esistenti trovati
   } catch(e) {
@@ -819,6 +823,32 @@ function matchPlayer(rawName) {
   return p || rawName;
 }
 
+
+/* ─── Parse timestamp Google Forms → YYYY-MM-DD ─── */
+function parseFormDate(timestamp) {
+  // Formato: "20/07/2026 9.39.15" oppure "20/07/2026 09:39:15"
+  if (!timestamp) return null;
+  const ts = String(timestamp).trim();
+  // Pattern GG/MM/AAAA
+  const m = ts.match(/(\d{1,2})[\/](\d{1,2})[\/](\d{4})/);
+  if (m) {
+    const [, dd, mm, yyyy] = m;
+    return `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
+  }
+  // Prova formato ISO
+  const iso = ts.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return iso[0];
+  return null;
+}
+
+function dateToMD(dateStr) {
+  // dateStr: "YYYY-MM-DD"
+  // Cerca nel calendario
+  if (S.sessCalendar[dateStr]) return S.sessCalendar[dateStr];
+  // Non trovata → restituisce null (useranno il MD selezionato manualmente)
+  return null;
+}
+
 async function syncAll() {
   const btn = document.getElementById('syncBtn');
   btn.innerHTML = '<i class="ti ti-refresh spin"></i> Sync...';
@@ -834,16 +864,24 @@ async function syncAll() {
       rows.forEach(row => {
         const keys = Object.keys(row);
         const rawName = (row[keys[1]] || '').trim();
-        const rpeV = parseFloat(row[keys[2]]) || 0;
+        const rpeV   = parseFloat(row[keys[2]]) || 0;
         if (!rawName || !rpeV) return;
         const p = matchPlayer(rawName);
         if (!S.rpeData[p]) S.rpeData[p] = {};
         if (!S.rpeSrc[p])  S.rpeSrc[p]  = {};
+        // Determina il giorno MD dalla data del timestamp
+        const timestamp  = (row[keys[0]] || '').trim();
+        const dateStr    = parseFormDate(timestamp);
+        const mdFromDate = dateStr ? dateToMD(dateStr) : null;
+        const targetMD   = mdFromDate || md; // usa calendario se disponibile, altrimenti MD manuale
         const override = parseInt(document.getElementById('min_override_' + p.replace(/[^a-z0-9]/gi,'_'))?.value) || 0;
-        const gpsRow = S.gpsData.find(g => g.p === p);
-        const min = override || gpsRow?.min || sessMinGlobal;
-        S.rpeData[p][md] = {rpe: rpeV, min, tl: Math.round(rpeV * min)};
-        S.rpeSrc[p][md] = 'live';
+        const gpsRow   = S.gpsData.find(g => g.p === p);
+        const min      = override || gpsRow?.min || sessMinGlobal;
+        S.rpeData[p][targetMD] = {rpe: rpeV, min, tl: Math.round(rpeV * min), date: dateStr||''};
+        S.rpeSrc[p][targetMD]  = 'live';
+        if (mdFromDate) {
+          console.log(rawName + ' → ' + targetMD + ' (da data ' + dateStr + ')');
+        }
         rpeU++;
       });
       console.log('RPE sync: ' + rpeU + ' atleti aggiornati');
@@ -853,7 +891,8 @@ async function syncAll() {
   // Wellness: import manuale tramite drop zone CSV nella tab Google Forms
   saveAll();
   document.getElementById('lastSync').textContent = 'Sync: ' + new Date().toLocaleTimeString('it-IT');
-  addSyncLog('RPE Forms', rpeU > 0 ? rpeU + ' atleti aggiornati' : 'Foglio vuoto', rpeU, rpeU > 0 ? 'ok' : 'wait');
+  const calDates = Object.keys(S.sessCalendar).length;
+  addSyncLog('RPE Forms', rpeU > 0 ? rpeU + ' atleti · ' + (calDates ? 'calendario attivo' : 'MD manuale') : 'Foglio vuoto', rpeU, rpeU > 0 ? 'ok' : 'wait');
   btn.innerHTML = '<i class="ti ti-refresh"></i> Sincronizza';
   btn.disabled = false;
   const activePage = document.querySelector('.page.active')?.id;
@@ -862,11 +901,17 @@ async function syncAll() {
 
 function applySess() {
   const tipo = document.getElementById('sessType').value;
-  const data = document.getElementById('sessDate').value;
+  const data = document.getElementById('sessDate').value; // formato YYYY-MM-DD
   const md   = document.getElementById('sessMD').value;
-  const min  = document.getElementById('sessMinutes')?.value||75;
-  addSyncLog('Sessione', `${tipo} · ${data} · ${min}' → ${md}`, PLAYERS().length, 'ok');
-  // Aggiorna immediatamente i minuti nei TL esistenti di questo MD (senza sovrascrivere override)
+  const min  = document.getElementById('sessMinutes')?.value || 75;
+
+  // Registra data→MD nel calendario
+  if (data) {
+    S.sessCalendar[data] = md;
+    console.log('Calendario aggiornato:', data, '→', md);
+  }
+
+  // Aggiorna minuti nei TL esistenti di questo MD
   PLAYERS().forEach(p => {
     const override = parseInt(document.getElementById('min_override_'+p.replace(/[^a-z0-9]/gi,'_'))?.value)||0;
     if (S.rpeData[p]?.[md] && !override) {
@@ -876,8 +921,37 @@ function applySess() {
       S.rpeData[p][md].tl  = Math.round(S.rpeData[p][md].rpe * newMin);
     }
   });
+
   saveAll();
-  alert(`✓ Sessione impostata:\n${tipo} del ${data}\nDurata: ${min} minuti → ${md}\n\nPremi Sincronizza per caricare le risposte RPE.`);
+  renderCalendarPanel();
+  addSyncLog('Sessione', tipo + ' · ' + data + ' · ' + min + '\' → ' + md, PLAYERS().length, 'ok');
+  alert('✓ Sessione registrata:\n' + tipo + ' del ' + data + '\nDurata: ' + min + ' min → ' + md + '\n\nPremi Sincronizza per caricare le risposte RPE.');
+}
+
+// Mostra il calendario sessioni registrate
+function renderCalendarPanel() {
+  const el = document.getElementById('calendarPanel');
+  if (!el) return;
+  const entries = Object.entries(S.sessCalendar).sort((a,b) => b[0].localeCompare(a[0]));
+  if (!entries.length) {
+    el.innerHTML = '<div style="font-size:11px;color:var(--gray-400);text-align:center;padding:10px">Nessuna sessione registrata ancora</div>';
+    return;
+  }
+  el.innerHTML = entries.map(([date, mdDay]) => {
+    const d = new Date(date);
+    const fmt = d.toLocaleDateString('it-IT', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-bottom:1px solid var(--gray-100);font-size:11px">
+      <span style="color:var(--gray-700)">${fmt}</span>
+      <span style="background:var(--primary);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:12px">${mdDay}</span>
+      <button onclick="deleteSessDate('${date}')" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:13px;padding:0 2px" title="Rimuovi">×</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteSessDate(date) {
+  delete S.sessCalendar[date];
+  saveAll();
+  renderCalendarPanel();
 }
 function addSyncLog(fonte,stato,n,type) {
   syncLogs.unshift({ts:new Date().toLocaleString('it-IT'),fonte,stato,n,type});
