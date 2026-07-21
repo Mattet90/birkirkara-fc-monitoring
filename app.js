@@ -43,6 +43,31 @@ const STATUS_BADGE = {
 function PLAYERS() { return ROSTER.map(p => p.cognome + ' ' + p.nome.charAt(0) + '.'); }
 
 const DAYS   = ['MD+1','MD+2','MD+3','MD-3','MD-2','MD-1','MD'];
+
+/* ── Helper: medie giornaliere squadra ── */
+function dayAvgRPE(d) {
+  // RPE medio squadra per un giorno: media degli atleti con RPE > 0
+  const vals = PLAYERS().map(p => S.rpeData[p]?.[d]?.rpe || 0).filter(v => v > 0);
+  return vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
+}
+function dayAvgMin(d) {
+  // Minuti medi squadra per un giorno: media degli atleti con minuti > 0
+  const vals = PLAYERS().map(p => S.rpeData[p]?.[d]?.min || 0).filter(v => v > 0);
+  return vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
+}
+function dayTL(d) {
+  // TL medio giornaliero = RPE medio × minuti medi
+  return Math.round(dayAvgRPE(d) * dayAvgMin(d));
+}
+function weeklySquadTL() {
+  // TL settimanale squadra = SOMMA dei TL medi giornalieri (solo giorni con dati)
+  return DAYS.reduce((s, d) => s + dayTL(d), 0);
+}
+function weeklyAvgRPE() {
+  // RPE medio settimanale = media dei RPE medi giornalieri (solo giorni con dati)
+  const days = DAYS.map(d => dayAvgRPE(d)).filter(v => v > 0);
+  return days.length ? rnd(days.reduce((a,b) => a+b, 0) / days.length) : 0;
+}
 const WDIMS  = ['sleep','muscle','fatigue','stress','motivation'];
 const WLBLS  = ['Sonno','Dolori','Stanchezza','Stress','Motivazione'];
 const WTEXT  = ['','Ottimo','Buono','Normale','Scarso','Molto scarso','Pessimo','Pessimo'];
@@ -131,12 +156,7 @@ function rv(a,b)    { return rnd(a + Math.random()*(b-a)); }
 function destroyC(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
 function getTL(p)     { return Object.values(S.rpeData[p]||{}).reduce((s,d)=>s+d.tl,0); }
 function totalTL() {
-  // Media delle medie giornaliere (solo giorni e atleti con dati reali)
-  const dayAvgs = DAYS.map(d => {
-    const vals = PLAYERS().map(p => S.rpeData[p]?.[d]?.tl || 0).filter(v => v > 0);
-    return vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
-  }).filter(v => v > 0);
-  return dayAvgs.length ? Math.round(dayAvgs.reduce((a,b) => a+b, 0) / dayAvgs.length) : 0;
+  return weeklySquadTL(); // Somma dei TL medi giornalieri
 }
 function getMonotony(p) {
   const tls = Object.values(S.rpeData[p]||{}).map(d=>d.tl);
@@ -990,20 +1010,65 @@ function renderOverview() {
   const avgRPE=rnd(PLAYERS().reduce((s,p)=>s+Object.values(S.rpeData[p]||{}).reduce((a,d)=>a+d.rpe,0)/DAYS.length,0)/PLAYERS().length);
   const atRisk=PLAYERS().filter(p=>getACWR(p)>1.3||getACWR(p)<0.8).length;
   const liveRPE=PLAYERS().filter(p=>Object.values(S.rpeSrc[p]||{}).some(s=>s==='live')).length;
+  // Calcoli corretti per overview
+  const squadTLWeek = weeklySquadTL();
+  const squadRPEavg = weeklyAvgRPE();
+  const daysWithData = DAYS.filter(d => dayAvgRPE(d) > 0).length;
+
   document.getElementById('kpiGrid').innerHTML=`
-    <div class="kpi-card c-primary"><div class="kpi-label">TL medio giornaliero</div><div class="kpi-value">${tot}</div><div class="kpi-sub">media sett. squadra</div></div>
+    <div class="kpi-card c-primary">
+      <div class="kpi-label">TL settimanale squadra</div>
+      <div class="kpi-value">${squadTLWeek.toLocaleString()}</div>
+      <div class="kpi-sub">somma medie giornaliere · ${daysWithData}/7 giorni</div>
+    </div>
     <div class="kpi-card ${(avgACWR>1.3||avgACWR<0.8)?'c-amber':'c-primary'}"><div class="kpi-label">ACWR medio</div><div class="kpi-value">${avgACWR}</div><div class="kpi-sub">ottimale 0.8–1.3</div></div>
-    <div class="kpi-card c-blue"><div class="kpi-label">RPE medio</div><div class="kpi-value">${avgRPE}</div><div class="kpi-sub">0–10 Foster</div></div>
+    <div class="kpi-card c-blue">
+      <div class="kpi-label">RPE medio settimanale</div>
+      <div class="kpi-value">${squadRPEavg}</div>
+      <div class="kpi-sub">media giorni con dati (${daysWithData})</div>
+    </div>
     <div class="kpi-card ${avgHI>25?'c-red':avgHI>18?'c-amber':'c-primary'}"><div class="kpi-label">HI medio (5 dim.)</div><div class="kpi-value">${avgHI}</div><div class="kpi-sub">/ 35</div></div>
     <div class="kpi-card ${atRisk>3?'c-red':atRisk>1?'c-amber':'c-green'}"><div class="kpi-label">A rischio</div><div class="kpi-value">${atRisk}</div><div class="kpi-sub">ACWR fuori range</div></div>
     <div class="kpi-card c-green"><div class="kpi-label">RPE live</div><div class="kpi-value">${liveRPE}</div><div class="kpi-sub">/ ${PLAYERS().length} atleti</div></div>`;
-  const playerCount = PLAYERS().length || 1;
-  const dayTotals=DAYS.map(d=>{
-    const vals = PLAYERS().map(p=>S.rpeData[p]?.[d]?.tl||0).filter(v=>v>0);
-    return vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
-  });
+  // Grafico: TL medio giornaliero = RPE medio × minuti medi per ogni giorno
+  const dayTotals = DAYS.map(d => dayTL(d));
   destroyC('tlWeekChart');
-  charts.tlWeekChart=new Chart(document.getElementById('tlWeekChart'),{type:'bar',data:{labels:DAYS,datasets:[{label:'TL medio',data:dayTotals,backgroundColor:'#00A878',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:10}}},x:{ticks:{font:{size:11}}}}}});
+  charts.tlWeekChart = new Chart(document.getElementById('tlWeekChart'), {
+    type: 'bar',
+    data: {
+      labels: DAYS,
+      datasets: [{
+        label: 'TL medio giorno',
+        data: dayTotals,
+        backgroundColor: DAYS.map(d => dayAvgRPE(d) > 0 ? '#00A878' : '#e2e8e6'),
+        borderRadius: 5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: ctx => ctx[0].label,
+            label: ctx => {
+              const d = DAYS[ctx.dataIndex];
+              const rpe = rnd(dayAvgRPE(d));
+              const min = Math.round(dayAvgMin(d));
+              const tl  = dayTL(d);
+              return rpe > 0
+                ? ['TL medio: ' + tl + ' UA', 'RPE medio: ' + rpe, 'Minuti medi: ' + min + '\'']
+                : ['Nessun dato'];
+            }
+          }
+        }
+      },
+      scales: {
+        y: { grid:{color:'rgba(0,0,0,.05)'}, ticks:{font:{size:10}} },
+        x: { ticks:{font:{size:11}} }
+      }
+    }
+  });
   const acwrs=PLAYERS().map(p=>getACWR(p));
   destroyC('acwrChart');
   charts.acwrChart=new Chart(document.getElementById('acwrChart'),{type:'bar',data:{labels:PLAYERS().map(p=>p.split(' ')[0]),datasets:[{label:'ACWR',data:acwrs,backgroundColor:acwrs.map(v=>v>1.3?'#dc2626':v<0.8?'#1d4ed8':'#00A878'),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:2,ticks:{font:{size:10}}},x:{ticks:{font:{size:9}}}}}});
@@ -1038,10 +1103,13 @@ function renderRPE() {
   const sel=document.getElementById('rpePlayer').value||PLAYERS()[0];
   const data=S.rpeData[sel]||{};
   const tot=getTL(sel); const mon=getMonotony(sel); const fat=getFatigue(sel);
-  const avgR=rnd(DAYS.reduce((s,d)=>s+(data[d]?.rpe||0),0)/DAYS.length);
+  // RPE medio solo sui giorni con dato inserito
+  const rpeVals = DAYS.map(d => data[d]?.rpe || 0).filter(v => v > 0);
+  const avgR = rpeVals.length ? rnd(rpeVals.reduce((a,b)=>a+b,0)/rpeVals.length) : 0;
+  const daysIn = rpeVals.length;
   document.getElementById('rpeKpi').innerHTML=`
-    <div class="kpi-card c-primary"><div class="kpi-label">TL Totale</div><div class="kpi-value">${tot}</div><div class="kpi-sub">UA sett.</div></div>
-    <div class="kpi-card c-blue"><div class="kpi-label">RPE medio</div><div class="kpi-value">${avgR}</div><div class="kpi-sub">0–10 Foster</div></div>
+    <div class="kpi-card c-primary"><div class="kpi-label">TL Totale (${sel})</div><div class="kpi-value">${tot}</div><div class="kpi-sub">UA sett. · ${daysIn} sessioni</div></div>
+    <div class="kpi-card c-blue"><div class="kpi-label">RPE medio sett.</div><div class="kpi-value">${avgR}</div><div class="kpi-sub">${daysIn} giorni con dati</div></div>
     <div class="kpi-card ${mon>2?'c-amber':'c-primary'}"><div class="kpi-label">Monotonia</div><div class="kpi-value">${mon}</div></div>
     <div class="kpi-card ${fat>5000?'c-red':fat>3000?'c-amber':'c-primary'}"><div class="kpi-label">Fatica</div><div class="kpi-value">${fat.toLocaleString()}</div><div class="kpi-sub">TL×Monotonia</div></div>`;
   destroyC('rpeChart');
@@ -1049,7 +1117,8 @@ function renderRPE() {
   const totSquad=totalTL();
   document.getElementById('rpeTableBody').innerHTML=PLAYERS().map(p=>{
     const d=S.rpeData[p]||{}; const ptl=getTL(p);
-    const prpe=rnd(DAYS.reduce((s,day)=>s+(d[day]?.rpe||0),0)/DAYS.length);
+    const rpeDays=DAYS.map(day=>d[day]?.rpe||0).filter(v=>v>0);
+    const prpe=rpeDays.length?rnd(rpeDays.reduce((a,b)=>a+b,0)/rpeDays.length):0;
     const hasL=Object.values(S.rpeSrc[p]||{}).some(s=>s==='live');
     const rp2=ROSTER.find(r=>r.cognome+' '+r.nome.charAt(0)+'.'===p);
     const thumbHtml = rp2?.photo
@@ -1172,10 +1241,13 @@ function renderACWR() {
   const tot=totalTL(); const acwrs=PLAYERS().map(p=>getACWR(p));
   const avg=rnd(acwrs.reduce((a,b)=>a+b,0)/acwrs.length);
   const atRisk=acwrs.filter(v=>v>1.3||v<0.8).length;
+  const squadWeekTL2 = weeklySquadTL();
+  const squadRPE2    = weeklyAvgRPE();
   document.getElementById('acwrKpi').innerHTML=`
     <div class="kpi-card ${(avg>1.3||avg<0.8)?'c-amber':'c-primary'}"><div class="kpi-label">ACWR medio</div><div class="kpi-value">${avg}</div><div class="kpi-sub">ottimale 0.8–1.3</div></div>
     <div class="kpi-card ${atRisk>3?'c-red':atRisk>1?'c-amber':'c-green'}"><div class="kpi-label">A rischio</div><div class="kpi-value">${atRisk}</div></div>
-    <div class="kpi-card c-blue"><div class="kpi-label">TL medio/giorno</div><div class="kpi-value">${tot}</div><div class="kpi-sub">media sett. squadra</div></div>`;
+    <div class="kpi-card c-primary"><div class="kpi-label">TL sett. squadra</div><div class="kpi-value">${squadWeekTL2.toLocaleString()}</div><div class="kpi-sub">somma medie giornaliere</div></div>
+    <div class="kpi-card c-blue"><div class="kpi-label">RPE medio sett.</div><div class="kpi-value">${squadRPE2}</div><div class="kpi-sub">Foster 0–10</div></div>`;
   destroyC('acwrPlayerChart');
   charts.acwrPlayerChart=new Chart(document.getElementById('acwrPlayerChart'),{type:'bar',data:{labels:PLAYERS().map(p=>p.split(' ')[0]),datasets:[{label:'ACWR',data:acwrs,backgroundColor:acwrs.map(v=>v>1.3?'#dc2626':v<0.8?'#1d4ed8':'#00A878'),borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{min:0,max:2,ticks:{font:{size:10}}},x:{ticks:{font:{size:9}}}}}});
   document.getElementById('pctBars').innerHTML=PLAYERS().map(p=>{
