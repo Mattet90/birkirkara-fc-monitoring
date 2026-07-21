@@ -666,7 +666,7 @@ function renderMinOverrideGrid() {
       <div style="width:28px;height:28px;border-radius:50%;background:${col};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0">${(p.nome.charAt(0)+p.cognome.charAt(0)).toUpperCase()}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:11px;font-weight:600;color:var(--gray-700);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.cognome} ${p.nome}</div>
-        <div style="font-size:9px;color:var(--gray-400)">${gpsMin ? 'GPS: '+gpsMin+''' : 'No GPS · Default: '+globalMin+'''}</div>
+        <div style="font-size:9px;color:var(--gray-400)">${gpsMin ? 'GPS: ' + gpsMin + '\'' : 'No GPS · Default: ' + globalMin + '\''}</div>
       </div>
       <input type="number" id="min_override_${key}" min="1" max="180" placeholder="${gpsMin||globalMin}"
         style="width:52px;font-size:12px;padding:3px 5px;border:1.5px solid var(--gray-200);border-radius:5px;text-align:center;font-family:'DM Mono',monospace"
