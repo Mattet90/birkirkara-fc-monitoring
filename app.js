@@ -275,11 +275,193 @@ function loadAll() {
   }
 }
 
-function clearAll() {
-  if (!confirm('Sei sicuro di voler cancellare TUTTI i dati salvati? Questa operazione è irreversibile.')) return;
+
+/* ═══════════════════════════════════════════
+   SISTEMA RESET GRANULARE
+   Permette di cancellare dati per singola sezione
+   o singolo giocatore senza perdere tutto
+═══════════════════════════════════════════ */
+
+function showResetPanel() {
+  // Crea il pannello modal di reset se non esiste
+  let panel = document.getElementById('resetPanel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'resetPanel';
+    panel.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;align-items:center;justify-content:center;';
+    panel.innerHTML = `
+      <div style="background:#fff;border-radius:14px;padding:24px;width:90%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding-bottom:12px;border-bottom:2px solid #fef3c7">
+          <span style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#006B4D">🗑 Gestione Dati</span>
+          <button onclick="document.getElementById('resetPanel').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:22px;color:#a3a3a3;line-height:1">×</button>
+        </div>
+
+        <!-- Reset per sezione -->
+        <div style="margin-bottom:20px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#637870;margin-bottom:10px">Cancella dati per sezione</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button class="btn" onclick="resetSection('rpe')" style="justify-content:flex-start;gap:8px;border-color:#e5e5e5">
+              <i class="ti ti-activity" style="color:#00A878"></i> RPE & Training Load
+            </button>
+            <button class="btn" onclick="resetSection('wellness')" style="justify-content:flex-start;gap:8px;border-color:#e5e5e5">
+              <i class="ti ti-heart-rate-monitor" style="color:#00A878"></i> Wellness
+            </button>
+            <button class="btn" onclick="resetSection('gps')" style="justify-content:flex-start;gap:8px;border-color:#e5e5e5">
+              <i class="ti ti-map-pin" style="color:#00A878"></i> GPS
+            </button>
+            <button class="btn" onclick="resetSection('fc')" style="justify-content:flex-start;gap:8px;border-color:#e5e5e5">
+              <i class="ti ti-heart" style="color:#00A878"></i> Frequenza Cardiaca
+            </button>
+          </div>
+        </div>
+
+        <!-- Reset RPE singolo giocatore -->
+        <div style="margin-bottom:20px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#637870;margin-bottom:8px">Cancella RPE di un giocatore</div>
+          <div style="display:flex;gap:8px">
+            <select id="resetPlayerSel" style="flex:1;padding:7px 10px;border:1.5px solid #e5e5e5;border-radius:7px;font-size:12px"></select>
+            <select id="resetDaySel" style="padding:7px 10px;border:1.5px solid #e5e5e5;border-radius:7px;font-size:12px">
+              <option value="all">Tutti i giorni</option>
+              <option>MD+1</option><option>MD+2</option><option>MD+3</option>
+              <option>MD-3</option><option>MD-2</option><option>MD-1</option><option>MD</option>
+            </select>
+            <button class="btn btn-danger btn-sm" onclick="resetPlayerRPE()">Cancella</button>
+          </div>
+        </div>
+
+        <!-- Reset Wellness singolo giocatore -->
+        <div style="margin-bottom:20px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#637870;margin-bottom:8px">Cancella Wellness di un giocatore</div>
+          <div style="display:flex;gap:8px">
+            <select id="resetWellPlayerSel" style="flex:1;padding:7px 10px;border:1.5px solid #e5e5e5;border-radius:7px;font-size:12px"></select>
+            <button class="btn btn-danger btn-sm" onclick="resetPlayerWellness()">Cancella</button>
+          </div>
+        </div>
+
+        <!-- Reset totale -->
+        <div style="border-top:1px solid #f5f5f5;padding-top:14px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#637870;margin-bottom:8px">Reset completo</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <button class="btn btn-danger" onclick="resetAllData()" style="font-size:12px">
+              <i class="ti ti-database-off"></i> Cancella tutti i dati
+            </button>
+            <button class="btn btn-danger" onclick="resetEverything()" style="font-size:12px">
+              <i class="ti ti-refresh-alert"></i> Reset completo app
+            </button>
+          </div>
+          <div style="font-size:10px;color:#a3a3a3;margin-top:6px">Reset completo app cancella anche la rosa e riparte da zero</div>
+        </div>
+
+        <!-- Log operazioni -->
+        <div id="resetLog" style="margin-top:12px;font-size:11px;color:#00A878;min-height:20px"></div>
+      </div>`;
+    document.body.appendChild(panel);
+  }
+
+  // Popola i select con i giocatori
+  const opts = PLAYERS().map(p => `<option>${p}</option>`).join('');
+  const rSel  = document.getElementById('resetPlayerSel');
+  const wSel  = document.getElementById('resetWellPlayerSel');
+  if (rSel) rSel.innerHTML = opts;
+  if (wSel) wSel.innerHTML = opts;
+
+  panel.style.display = 'flex';
+}
+
+function logReset(msg) {
+  const el = document.getElementById('resetLog');
+  if (el) el.innerHTML = '<i class="ti ti-check" style="color:var(--green-ok)"></i> ' + msg;
+}
+
+function resetSection(section) {
+  const labels = {rpe:'RPE & TL', wellness:'Wellness', gps:'GPS', fc:'Frequenza Cardiaca'};
+  if (!confirm('Cancellare tutti i dati ' + (labels[section]||section) + '? Questa operazione è irreversibile.')) return;
+
+  switch(section) {
+    case 'rpe':
+      PLAYERS().forEach(p => {
+        S.rpeData[p] = {};
+        S.rpeSrc[p]  = {};
+        DAYS.forEach(d => { S.rpeData[p][d] = {rpe:0, min:0, tl:0}; S.rpeSrc[p][d] = 'demo'; });
+      });
+      break;
+    case 'wellness':
+      PLAYERS().forEach(p => {
+        S.wellData[p] = {sleep:3, muscle:3, fatigue:3, stress:3, motivation:3, hi:15};
+        S.wellSrc[p]  = 'demo';
+      });
+      break;
+    case 'gps':
+      S.gpsData = [];
+      break;
+    case 'fc':
+      PLAYERS().forEach(p => { S.fcData[p] = {z5:0,z4:0,z3:0,z2:0,z1:0,tl:0}; });
+      break;
+  }
+  saveAll();
+  logReset('Dati ' + (labels[section]||section) + ' cancellati.');
+  const ap = document.querySelector('.page.active')?.id;
+  if (ap) setTimeout(() => renderPage(ap), 100);
+}
+
+function resetPlayerRPE() {
+  const p   = document.getElementById('resetPlayerSel')?.value;
+  const day = document.getElementById('resetDaySel')?.value;
+  if (!p) return;
+  if (!confirm('Cancellare RPE di ' + p + (day==='all' ? ' (tutti i giorni)' : ' - ' + day) + '?')) return;
+
+  if (!S.rpeData[p]) S.rpeData[p] = {};
+  if (!S.rpeSrc[p])  S.rpeSrc[p]  = {};
+
+  if (day === 'all') {
+    DAYS.forEach(d => { S.rpeData[p][d] = {rpe:0,min:0,tl:0}; S.rpeSrc[p][d] = 'demo'; });
+    logReset('RPE di ' + p + ' (tutti i giorni) cancellati.');
+  } else {
+    S.rpeData[p][day] = {rpe:0, min:0, tl:0};
+    S.rpeSrc[p][day]  = 'demo';
+    logReset('RPE di ' + p + ' - ' + day + ' cancellato.');
+  }
+  saveAll();
+  const ap = document.querySelector('.page.active')?.id;
+  if (ap) setTimeout(() => renderPage(ap), 100);
+}
+
+function resetPlayerWellness() {
+  const p = document.getElementById('resetWellPlayerSel')?.value;
+  if (!p) return;
+  if (!confirm('Cancellare dati Wellness di ' + p + '?')) return;
+  S.wellData[p] = {sleep:3, muscle:3, fatigue:3, stress:3, motivation:3, hi:15};
+  S.wellSrc[p]  = 'demo';
+  saveAll();
+  logReset('Wellness di ' + p + ' cancellato.');
+  const ap = document.querySelector('.page.active')?.id;
+  if (ap) setTimeout(() => renderPage(ap), 100);
+}
+
+function resetAllData() {
+  if (!confirm('Cancellare TUTTI i dati (RPE, Wellness, GPS, FC)?\nLa rosa dei giocatori verrà mantenuta.')) return;
+  PLAYERS().forEach(p => {
+    S.rpeData[p]  = {};
+    S.rpeSrc[p]   = {};
+    DAYS.forEach(d => { S.rpeData[p][d]={rpe:0,min:0,tl:0}; S.rpeSrc[p][d]='demo'; });
+    S.fcData[p]   = {z5:0,z4:0,z3:0,z2:0,z1:0,tl:0};
+    S.wellData[p] = {sleep:3,muscle:3,fatigue:3,stress:3,motivation:3,hi:15};
+    S.wellSrc[p]  = 'demo';
+  });
+  S.gpsData = [];
+  saveAll();
+  logReset('Tutti i dati cancellati. Rosa mantenuta.');
+  setTimeout(() => renderPage('overview'), 200);
+}
+
+function resetEverything() {
+  if (!confirm('Reset COMPLETO dell\'app?\nVerranno cancellati tutti i dati E la rosa dei giocatori.\n\nSei sicuro?')) return;
   Object.values(LS).forEach(k => localStorage.removeItem(k));
+  localStorage.removeItem('bkk_version');
   location.reload();
 }
+
+function clearAll() { showResetPanel(); }
 
 function exportData() {
   const data = {
