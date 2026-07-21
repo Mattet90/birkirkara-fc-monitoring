@@ -588,12 +588,12 @@ function matchPlayer(rawName) {
 }
 
 async function syncAll() {
-  const btn=document.getElementById('syncBtn');
-  btn.innerHTML='<i class="ti ti-refresh spin"></i> Sync...'; btn.disabled=true;
-  let rpeU=0, wellU=0;
-  const md=document.getElementById('sessMD')?.value||'MD-1';
-  // Leggi minuti sessione globale
-  const sessMinGlobal = parseInt(document.getElementById('sessMinutes')?.value)||75;
+  const btn = document.getElementById('syncBtn');
+  btn.innerHTML = '<i class="ti ti-refresh spin"></i> Sync...';
+  btn.disabled = true;
+  let rpeU = 0;
+  const md = document.getElementById('sessMD')?.value || 'MD-1';
+  const sessMinGlobal = parseInt(document.getElementById('sessMinutes')?.value) || 75;
 
   try {
     const csvText = await fetchCSV('https://docs.google.com/spreadsheets/d/e/2PACX-1vR4YuMaExxKAj4GzR3x4rGvvMd7aBb9nI6TmkvBo0udVbWjXLT9IedUK08BfklRjbmj-lyoxo3WWz6G/pub?gid=2015047575&single=true&output=csv');
@@ -601,48 +601,31 @@ async function syncAll() {
       const rows = Papa.parse(csvText, {header:true, skipEmptyLines:true}).data;
       rows.forEach(row => {
         const keys = Object.keys(row);
-        const rawName = (row[keys[1]]||'').trim();
-        const rpeV   = parseFloat(row[keys[2]])||0;
+        const rawName = (row[keys[1]] || '').trim();
+        const rpeV = parseFloat(row[keys[2]]) || 0;
         if (!rawName || !rpeV) return;
         const p = matchPlayer(rawName);
         if (!S.rpeData[p]) S.rpeData[p] = {};
         if (!S.rpeSrc[p])  S.rpeSrc[p]  = {};
-        // Minuti: usa override individuale se presente, altrimenti GPS, altrimenti globale
-        const override = parseInt(document.getElementById('min_override_'+p.replace(/[^a-z0-9]/gi,'_'))?.value)||0;
-        const gpsRow   = S.gpsData.find(g=>g.p===p);
-        const min      = override || gpsRow?.min || sessMinGlobal;
-        S.rpeData[p][md] = {rpe:rpeV, min, tl:Math.round(rpeV*min)};
-        S.rpeSrc[p][md]  = 'live';
+        const override = parseInt(document.getElementById('min_override_' + p.replace(/[^a-z0-9]/gi,'_'))?.value) || 0;
+        const gpsRow = S.gpsData.find(g => g.p === p);
+        const min = override || gpsRow?.min || sessMinGlobal;
+        S.rpeData[p][md] = {rpe: rpeV, min, tl: Math.round(rpeV * min)};
+        S.rpeSrc[p][md] = 'live';
         rpeU++;
       });
-      console.log(`RPE sync: ${rpeU} atleti aggiornati`);
-    } else {
-      console.warn('RPE CSV: nessun dato ricevuto');
+      console.log('RPE sync: ' + rpeU + ' atleti aggiornati');
     }
   } catch(e) { console.error('RPE sync error:', e); }
-  // Wellness: import manuale CSV (vedi tab Google Forms → drop zone)
-;
-        if (v(2)!==null) S.wellData[p].sleep      = v(2);
-        if (v(3)!==null) S.wellData[p].muscle     = v(3);
-        if (v(4)!==null) S.wellData[p].fatigue    = v(4);
-        if (v(5)!==null) S.wellData[p].stress     = v(5);
-        if (v(6)!==null) S.wellData[p].motivation = v(6);
-        S.wellData[p].hi = WDIMS.reduce((s,k)=>s+S.wellData[p][k], 0);
-        S.wellSrc[p] = 'live';
-        wellU++;
-      });
-      console.log(`Wellness sync: ${wellU} atleti aggiornati`);
-    } else {
-      console.warn('Wellness CSV: nessun dato ricevuto (403 - verifica pubblicazione foglio)');
-    }
-  } catch(e) { console.error('Wellness sync error:', e); }
+
+  // Wellness: import manuale tramite drop zone CSV nella tab Google Forms
   saveAll();
-  document.getElementById('lastSync').textContent='Sync: '+new Date().toLocaleTimeString('it-IT');
-  addSyncLog('RPE Forms',   rpeU>0?`${rpeU} atleti aggiornati`:'Foglio vuoto', rpeU,  rpeU>0?'ok':'wait');
-  addSyncLog('Wellness',    wellU>0?`${wellU} atleti aggiornati`:'Foglio vuoto', wellU, wellU>0?'ok':'wait');
-  btn.innerHTML='<i class="ti ti-refresh"></i> Sincronizza'; btn.disabled=false;
-  const activePage=document.querySelector('.page.active')?.id;
-  if(activePage)renderPage(activePage);
+  document.getElementById('lastSync').textContent = 'Sync: ' + new Date().toLocaleTimeString('it-IT');
+  addSyncLog('RPE Forms', rpeU > 0 ? rpeU + ' atleti aggiornati' : 'Foglio vuoto', rpeU, rpeU > 0 ? 'ok' : 'wait');
+  btn.innerHTML = '<i class="ti ti-refresh"></i> Sincronizza';
+  btn.disabled = false;
+  const activePage = document.querySelector('.page.active')?.id;
+  if (activePage) renderPage(activePage);
 }
 
 function applySess() {
