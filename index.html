@@ -647,11 +647,21 @@ tbody tr:nth-child(even):hover td { background: var(--primary-l); }
           </div>
 
           <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
-            <button class="btn btn-yellow" onclick="applySess()"><i class="ti ti-check"></i> Imposta sessione</button>
+            <button class="btn btn-yellow" onclick="applySess()"><i class="ti ti-check"></i> Registra sessione</button>
             <button class="btn" onclick="syncAll()" style="border-color:var(--primary);color:var(--primary)"><i class="ti ti-refresh"></i> Sincronizza ora</button>
           </div>
           <div style="font-size:10px;color:var(--gray-400);margin-top:6px">
-            TL = RPE (dal Forms) × Minuti (override → GPS → valore globale)
+            La data della sessione viene abbinata automaticamente al giorno MD al momento della sincronizzazione.
+          </div>
+
+          <!-- Calendario sessioni registrate -->
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(245,197,24,.3)">
+            <div style="font-size:10px;font-weight:700;color:var(--primary-d);text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px">
+              <i class="ti ti-calendar" style="font-size:12px"></i> Calendario sessioni registrate
+            </div>
+            <div id="calendarPanel" style="max-height:180px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;background:var(--white)">
+              <div style="font-size:11px;color:var(--gray-400);text-align:center;padding:10px">Nessuna sessione registrata ancora</div>
+            </div>
           </div>
         </div>
       </div>
