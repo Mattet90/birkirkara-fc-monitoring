@@ -156,13 +156,20 @@ function srcTag(src) {
 
 /* ─── NAVIGAZIONE ─── */
 function showPage(id, btn) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  if (btn) btn.classList.add('active');
-  document.getElementById('topbarTitle').textContent = PAGE_TITLES[id]||id;
-  closeSidebar();
-  setTimeout(()=>renderPage(id), 40);
+  try {
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(b=>b.classList.remove('active'));
+    const el = document.getElementById(id);
+    if (!el) { console.error('Pagina non trovata: ' + id); return; }
+    el.classList.add('active');
+    if (btn) btn.classList.add('active');
+    const titleEl = document.getElementById('topbarTitle');
+    if (titleEl) titleEl.textContent = PAGE_TITLES[id] || id;
+    closeSidebar();
+    setTimeout(()=>renderPage(id), 40);
+  } catch(e) {
+    console.error('showPage error:', e);
+  }
 }
 function renderPage(id) {
   const map = {
@@ -172,7 +179,13 @@ function renderPage(id) {
     gps:renderGPS, fc:renderFC,
     acwr:renderACWR, players:renderPlayer, import:renderImportPage
   };
-  (map[id]||Function)();
+  try {
+    (map[id] || function(){})();
+  } catch(e) {
+    console.error('Errore render pagina ' + id + ':', e);
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<div style="padding:24px;color:#dc2626"><i class="ti ti-alert-circle" style="font-size:24px"></i><br><strong>Errore caricamento pagina.</strong><br><small>' + e.message + '</small><br><br><button class="btn btn-primary" onclick="clearAll()">Reset dati e ricarica</button></div>';
+  }
 }
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
@@ -212,17 +225,27 @@ function saveAll() {
     localStorage.setItem(LS.WELL_SRC, JSON.stringify(S.wellSrc));
     localStorage.setItem(LS.GPS,      JSON.stringify(S.gpsData));
     localStorage.setItem(LS.ID_CTR,   String(rosterIdCounter));
+    localStorage.setItem('bkk_version', APP_VERSION);
   } catch(e) {
     console.warn('localStorage write error:', e);
   }
 }
 
+const APP_VERSION = '2.1';
 function loadAll() {
   try {
+    // Version check: se la versione è diversa resetta tutto
+    const savedVersion = localStorage.getItem('bkk_version');
+    if (savedVersion && savedVersion !== APP_VERSION) {
+      console.log('Versione cambiata (' + savedVersion + ' → ' + APP_VERSION + '), reset localStorage');
+      Object.values(LS).forEach(k => localStorage.removeItem(k));
+      localStorage.removeItem('bkk_version');
+      return false;
+    }
     const savedRoster = localStorage.getItem(LS.ROSTER);
     if (savedRoster) {
       ROSTER = JSON.parse(savedRoster);
-      console.log(`✓ Rosa caricata: ${ROSTER.length} giocatori`);
+      console.log('✓ Rosa caricata: ' + ROSTER.length + ' giocatori');
     }
     const savedIdCtr = localStorage.getItem(LS.ID_CTR);
     if (savedIdCtr) rosterIdCounter = parseInt(savedIdCtr) || 16;
