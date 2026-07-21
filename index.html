@@ -738,9 +738,25 @@ tbody tr:nth-child(even):hover td { background: var(--primary-l); }
 
     <!-- RPE & TL -->
     <div id="rpe" class="page">
-      <div class="page-header"><div class="page-header-icon"><i class="ti ti-activity"></i></div><div><h1>RPE &amp; Training Load</h1><p>Scala Foster CR10 (0–10) · TL = RPE × Minuti GPS</p></div></div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-        <div class="form-group" style="margin:0"><label>Giocatore</label><select id="rpePlayer" onchange="renderRPE()" style="padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:7px;font-size:12px;background:var(--white)"></select></div>
+      <div class="page-header"><div class="page-header-icon"><i class="ti ti-activity"></i></div><div><h1>RPE &amp; Training Load</h1><p>Scala Foster CR10 (0–10) · TL = RPE × min · 🟢 live · 🔵 manuale</p></div></div>
+
+      <!-- Griglia giornaliera squadra -->
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header">
+          <i class="ti ti-table card-title-icon"></i>
+          <span class="card-title">Griglia RPE giornaliera squadra</span>
+          <span style="margin-left:auto;font-size:10px;color:var(--gray-400)">Inserisci direttamente nelle celle · 0–10 Foster CR10</span>
+        </div>
+        <div class="info-strip" style="margin-bottom:10px">
+          <strong>Come usare:</strong> inserisci il valore RPE direttamente nella cella corrispondente a giocatore × giorno. Il TL si calcola automaticamente.
+          Il pallino <span style="color:#16a34a">●</span> verde indica dato sincronizzato dal Forms.
+        </div>
+        <div id="rpeGridContainer"></div>
+      </div>
+
+      <!-- Dettaglio singolo atleta -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+        <div class="form-group" style="margin:0"><label>Dettaglio singolo atleta</label><select id="rpePlayer" onchange="renderRPE()" style="padding:6px 10px;border:1.5px solid var(--gray-200);border-radius:7px;font-size:12px;background:var(--white)"></select></div>
         <div style="font-size:10px;color:var(--gray-500);display:flex;gap:8px;align-items:center;margin-top:14px"><span class="src-live">● live</span> Forms &nbsp;<span class="src-manual">● man</span> manuale</div>
       </div>
       <div class="kpi-grid" id="rpeKpi"></div>
