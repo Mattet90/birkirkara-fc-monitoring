@@ -539,10 +539,13 @@ tbody tr:nth-child(even):hover td { background: var(--primary-l); }
   </div>
   <div class="sidebar-footer">
     <strong>Staff Tecnico · Birkirkara FC</strong>
-    v2.0 · Stagione 2026/27
+    v2.1 · Stagione 2026/27
     <div style="margin-top:6px;font-size:9px;color:rgba(245,197,24,.4);display:flex;align-items:center;gap:4px">
       <i class="ti ti-device-floppy" style="font-size:11px" aria-hidden="true"></i> Dati salvati localmente
     </div>
+    <button onclick="showResetPanel()" style="margin-top:8px;width:100%;background:rgba(204,0,0,.15);border:1px solid rgba(204,0,0,.3);border-radius:6px;padding:5px 8px;font-size:10px;color:rgba(255,120,120,.8);cursor:pointer;display:flex;align-items:center;gap:5px;font-family:inherit">
+      <i class="ti ti-trash" style="font-size:12px" aria-hidden="true"></i> Gestione / Reset dati
+    </button>
   </div>
 </nav>
 
@@ -568,8 +571,8 @@ tbody tr:nth-child(even):hover td { background: var(--primary-l); }
         <button class="btn-topbar" onclick="importData()" title="Importa backup JSON">
           <i class="ti ti-upload" aria-hidden="true"></i>
         </button>
-        <button class="btn-topbar btn-topbar-danger" onclick="clearAll()" title="Azzera tutti i dati">
-          <i class="ti ti-trash" aria-hidden="true"></i>
+        <button class="btn-topbar btn-topbar-danger" onclick="showResetPanel()" title="Gestione dati – cancella sezione o giocatore">
+          <i class="ti ti-adjustments-minus" aria-hidden="true"></i>
         </button>
       </div>
       <button class="btn-sync" onclick="syncAll()" id="syncBtn">
