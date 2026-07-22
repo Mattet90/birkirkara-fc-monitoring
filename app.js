@@ -46,18 +46,19 @@ const DAYS   = ['MD+1','MD+2','MD+3','MD-3','MD-2','MD-1','MD'];
 
 /* ── Helper: medie giornaliere squadra ── */
 function dayAvgRPE(d) {
-  // RPE medio squadra per un giorno: media degli atleti con RPE > 0
-  const vals = PLAYERS().map(p => S.rpeData[p]?.[d]?.rpe || 0).filter(v => v > 0);
+  const vals = PLAYERS().map(p => getPlayerDayRPE(p, d)).filter(v => v > 0);
   return vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
 }
 function dayAvgMin(d) {
-  // Minuti medi squadra per un giorno: media degli atleti con minuti > 0
-  const vals = PLAYERS().map(p => S.rpeData[p]?.[d]?.min || 0).filter(v => v > 0);
-  return vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
+  const vals = PLAYERS().map(p => {
+    const ss = getPlayerDaySessions(p, d);
+    return ss.reduce((s,e) => s+(e.min||0), 0);
+  }).filter(v => v > 0);
+  return vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
 }
 function dayTL(d) {
-  // TL medio giornaliero = RPE medio × minuti medi
-  return Math.round(dayAvgRPE(d) * dayAvgMin(d));
+  const vals = PLAYERS().map(p => getPlayerDayTL(p, d)).filter(v => v > 0);
+  return vals.length ? Math.round(vals.reduce((a,b) => a+b, 0) / vals.length) : 0;
 }
 function weeklySquadTL() {
   // TL settimanale squadra = SOMMA dei TL medi giornalieri (solo giorni con dati)
@@ -155,7 +156,7 @@ function populateSelects() {
 function rnd(v,d=1) { return parseFloat((+v).toFixed(d)); }
 function rv(a,b)    { return rnd(a + Math.random()*(b-a)); }
 function destroyC(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
-function getTL(p)     { return Object.values(S.rpeData[p]||{}).reduce((s,d)=>s+d.tl,0); }
+function getTL(p) { return DAYS.reduce((s, d) => s + getPlayerDayTL(p, d), 0); }
 function totalTL() {
   return weeklySquadTL(); // Somma dei TL medi giornalieri
 }
@@ -824,6 +825,27 @@ function matchPlayer(rawName) {
 }
 
 
+
+/* ─── Doppia seduta: helper sessioni ─── */
+function normalizeDayData(entry) {
+  if (!entry) return [];
+  if (Array.isArray(entry)) return entry.filter(e => e.rpe > 0);
+  return entry.rpe > 0 ? [entry] : [];
+}
+function getPlayerDayRPE(player, day) {
+  return normalizeDayData(S.rpeData[player]?.[day]).reduce((s, e) => s + (e.rpe||0), 0);
+}
+function getPlayerDayTL(player, day) {
+  return normalizeDayData(S.rpeData[player]?.[day]).reduce((s, e) => s + (e.tl||0), 0);
+}
+function getPlayerDaySessions(player, day) {
+  return normalizeDayData(S.rpeData[player]?.[day]);
+}
+function clearDaySessions(player, day) {
+  if (S.rpeData[player]) S.rpeData[player][day] = [];
+  if (S.rpeSrc[player])  S.rpeSrc[player][day]  = 'demo';
+}
+
 /* ─── Parse timestamp Google Forms → YYYY-MM-DD ─── */
 function parseFormDate(timestamp) {
   // Formato: "20/07/2026 9.39.15" oppure "20/07/2026 09:39:15"
@@ -844,9 +866,9 @@ function parseFormDate(timestamp) {
 function dateToMD(dateStr) {
   // dateStr: "YYYY-MM-DD"
   // Cerca nel calendario
-  if (S.sessCalendar[dateStr]) return S.sessCalendar[dateStr];
-  // Non trovata → restituisce null (useranno il MD selezionato manualmente)
-  return null;
+  const ce = S.sessCalendar[dateStr];
+  if (!ce) return null;
+  return (typeof ce === 'object') ? ce.md : ce;
 }
 
 async function syncAll() {
@@ -855,7 +877,8 @@ async function syncAll() {
   btn.disabled = true;
   let rpeU = 0;
   const md = document.getElementById('sessMD')?.value || 'MD-1';
-  const sessMinGlobal = parseInt(document.getElementById('sessMinutes')?.value) || 75;
+  const sessMinGlobal   = parseInt(document.getElementById('sessMinutes')?.value) || 75;
+  const currentSessType = document.getElementById('sessType')?.value || 'Allenamento';
 
   try {
     const csvText = await fetchCSV('https://docs.google.com/spreadsheets/d/e/2PACX-1vR4YuMaExxKAj4GzR3x4rGvvMd7aBb9nI6TmkvBo0udVbWjXLT9IedUK08BfklRjbmj-lyoxo3WWz6G/pub?gid=2015047575&single=true&output=csv');
@@ -877,12 +900,17 @@ async function syncAll() {
         const override = parseInt(document.getElementById('min_override_' + p.replace(/[^a-z0-9]/gi,'_'))?.value) || 0;
         const gpsRow   = S.gpsData.find(g => g.p === p);
         const min      = override || gpsRow?.min || sessMinGlobal;
-        S.rpeData[p][targetMD] = {rpe: rpeV, min, tl: Math.round(rpeV * min), date: dateStr||''};
-        S.rpeSrc[p][targetMD]  = 'live';
-        if (mdFromDate) {
-          console.log(rawName + ' → ' + targetMD + ' (da data ' + dateStr + ')');
+        if (!S.rpeData[p])  S.rpeData[p] = {};
+        if (!S.rpeSrc[p])   S.rpeSrc[p]  = {};
+        const sessLbl2   = (dateStr && S.sessCalendar[dateStr]?.label) ? S.sessCalendar[dateStr].label : currentSessType;
+        const existing2  = normalizeDayData(S.rpeData[p][targetMD]);
+        const duplicate2 = existing2.some(e => e.date === (dateStr||'') && e.rpe === rpeV && e.src === 'live');
+        if (!duplicate2) {
+          existing2.push({ rpe:rpeV, min, tl:Math.round(rpeV*min), sessType:sessLbl2, date:dateStr||'', src:'live' });
+          S.rpeData[p][targetMD] = existing2;
+          S.rpeSrc[p][targetMD]  = 'live';
+          rpeU++;
         }
-        rpeU++;
       });
       console.log('RPE sync: ' + rpeU + ' atleti aggiornati');
     }
@@ -907,8 +935,8 @@ function applySess() {
 
   // Registra data→MD nel calendario
   if (data) {
-    S.sessCalendar[data] = md;
-    console.log('Calendario aggiornato:', data, '→', md);
+    const tipoSess2 = document.getElementById('sessType')?.value || 'Allenamento';
+    S.sessCalendar[data] = { md, label: tipoSess2 };
   }
 
   // Aggiorna minuti nei TL esistenti di questo MD
@@ -939,11 +967,16 @@ function renderCalendarPanel() {
   }
   el.innerHTML = entries.map(([date, mdDay]) => {
     const d = new Date(date);
-    const fmt = d.toLocaleDateString('it-IT', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-bottom:1px solid var(--gray-100);font-size:11px">
-      <span style="color:var(--gray-700)">${fmt}</span>
-      <span style="background:var(--primary);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:12px">${mdDay}</span>
-      <button onclick="deleteSessDate('${date}')" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:13px;padding:0 2px" title="Rimuovi">×</button>
+    const fmt2  = d.toLocaleDateString('it-IT', {weekday:'short', day:'2-digit', month:'short', year:'numeric'});
+    const mdV2  = (typeof mdDay === 'object') ? mdDay.md    : mdDay;
+    const lbl2  = (typeof mdDay === 'object') ? mdDay.label : '';
+    const is2xC = lbl2.toLowerCase().includes('doppia') || lbl2.toLowerCase().includes('double');
+    return `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--gray-100);font-size:11px">
+      <span style="flex:1;color:var(--gray-700)">${fmt2}</span>
+      ${is2xC ? '<span style="background:#7c3aed;color:#fff;font-size:8px;font-weight:700;padding:1px 5px;border-radius:10px">2x</span>' : ''}
+      <span style="font-size:9px;color:var(--gray-500);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${lbl2}</span>
+      <span style="background:var(--primary);color:#fff;font-size:9px;font-weight:700;padding:2px 7px;border-radius:12px">${mdV2}</span>
+      <button onclick="deleteSessDate('${date}')" style="background:none;border:none;cursor:pointer;color:var(--gray-400);font-size:13px;padding:0 2px">×</button>
     </div>`;
   }).join('');
 }
@@ -1209,7 +1242,7 @@ function renderRPEGrid() {
     const data = S.rpeData[p] || {};
     const src  = S.rpeSrc[p]  || {};
 
-    const rpeVals = DAYS.map(d => data[d]?.rpe || 0).filter(v => v > 0);
+    const rpeVals = DAYS.map(d => getPlayerDayRPE(sel, d)).filter(v => v > 0);
     const avgRPE  = rpeVals.length ? Math.round(rpeVals.reduce((a,b)=>a+b,0)/rpeVals.length) : 0;
     const tlTot   = DAYS.reduce((s,d) => s + (data[d]?.tl||0), 0);
 
@@ -1286,7 +1319,9 @@ function updateRPECell(player, day, val) {
 
   if (!val || isNaN(rpe) || rpe < 0) {
     // Cancella il valore
-    S.rpeData[player][day] = {rpe:0, min:0, tl:0};
+    if (!S.rpeData[player]) S.rpeData[player]={};
+    S.rpeData[player][day] = [];
+    if (!S.rpeSrc[player]) S.rpeSrc[player]={};
     S.rpeSrc[player][day]  = 'demo';
   } else {
     const clampedRPE = Math.min(10, Math.max(0, rpe));
@@ -1294,7 +1329,8 @@ function updateRPECell(player, day, val) {
     const gpsRow     = S.gpsData.find(g => g.p === player);
     const sessMin    = parseInt(document.getElementById('sessMinutes')?.value) || 75;
     const min        = override || gpsRow?.min || sessMin;
-    S.rpeData[player][day] = {rpe:clampedRPE, min, tl: Math.round(clampedRPE * min)};
+    const stG = document.getElementById('sessType')?.value || 'Allenamento';
+    S.rpeData[player][day] = [{ rpe:clampedRPE, min, tl:Math.round(clampedRPE*min), sessType:stG, src:'manual', date:'' }];
     S.rpeSrc[player][day]  = 'manual';
   }
 
@@ -1355,7 +1391,7 @@ function renderRPE() {
   const data=S.rpeData[sel]||{};
   const tot=getTL(sel); const mon=getMonotony(sel); const fat=getFatigue(sel);
   // RPE medio solo sui giorni con dato inserito
-  const rpeVals = DAYS.map(d => data[d]?.rpe || 0).filter(v => v > 0);
+  const rpeVals = DAYS.map(d => getPlayerDayRPE(sel, d)).filter(v => v > 0);
   const avgR = rpeVals.length ? Math.round(rpeVals.reduce((a,b)=>a+b,0)/rpeVals.length) : 0;
   const daysIn = rpeVals.length;
   document.getElementById('rpeKpi').innerHTML=`
@@ -1368,7 +1404,7 @@ function renderRPE() {
   const totSquad=totalTL();
   document.getElementById('rpeTableBody').innerHTML=PLAYERS().map(p=>{
     const d=S.rpeData[p]||{}; const ptl=getTL(p);
-    const rpeDays=DAYS.map(day=>d[day]?.rpe||0).filter(v=>v>0);
+    const rpeDays=DAYS.map(day=>getPlayerDayRPE(p,day)).filter(v=>v>0);
     const prpe=rpeDays.length?Math.round(rpeDays.reduce((a,b)=>a+b,0)/rpeDays.length):0;
     const hasL=Object.values(S.rpeSrc[p]||{}).some(s=>s==='live');
     const rp2=ROSTER.find(r=>r.cognome+' '+r.nome.charAt(0)+'.'===p);
