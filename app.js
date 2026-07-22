@@ -1242,7 +1242,7 @@ function renderRPEGrid() {
     const data = S.rpeData[p] || {};
     const src  = S.rpeSrc[p]  || {};
 
-    const rpeVals = DAYS.map(d => getPlayerDayRPE(sel, d)).filter(v => v > 0);
+    const rpeVals = DAYS.map(d => getPlayerDayRPE(p, d)).filter(v => v > 0);
     const avgRPE  = rpeVals.length ? Math.round(rpeVals.reduce((a,b)=>a+b,0)/rpeVals.length) : 0;
     const tlTot   = DAYS.reduce((s,d) => s + (data[d]?.tl||0), 0);
 
@@ -1262,26 +1262,26 @@ function renderRPEGrid() {
         <span style="background:${col}22;color:${col};font-size:9px;font-weight:700;padding:2px 5px;border-radius:4px">${player.ruolo||'—'}</span>
       </td>
       ${DAYS.map(d => {
-        const entry  = data[d] || {rpe:0,min:0,tl:0};
+        const ssG    = getPlayerDaySessions(p, d);
+        const dayRg  = getPlayerDayRPE(p, d);
+        const dayTg  = getPlayerDayTL(p, d);
         const isLive = src[d] === 'live';
-        const hasVal = entry.rpe > 0;
-        const rpeCol = entry.rpe >= 8 ? '#dc2626' : entry.rpe >= 6 ? '#d97706' : entry.rpe >= 4 ? '#00A878' : entry.rpe > 0 ? '#0891b2' : '';
+        const hasVal = dayRg > 0;
+        const is2xG  = ssG.length > 1;
+        const rpeCol = dayRg>=8?'#dc2626':dayRg>=6?'#d97706':dayRg>=4?'#00A878':dayRg>0?'#0891b2':'';
         const cellId = 'rpe_' + p.replace(/[^a-z0-9]/gi,'_') + '_' + d.replace(/[^a-z0-9]/gi,'_');
-        return `<td style="padding:4px 6px;text-align:center;border-bottom:1px solid var(--gray-100)">
-          <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
-            <div style="position:relative;display:inline-flex;align-items:center">
-              <input type="number" id="${cellId}"
-                min="0" max="10" step="1"
-                value="${hasVal ? entry.rpe : ''}"
-                placeholder="—"
-                ${player.stato === 'Infortunato' ? 'disabled' : ''}
-                style="width:46px;text-align:center;padding:4px 2px;border:1.5px solid ${hasVal ? rpeCol : 'var(--gray-200)'};border-radius:6px;font-size:13px;font-weight:${hasVal?'700':'400'};color:${hasVal?rpeCol:'var(--gray-400)'};background:${hasVal?rpeCol+'11':'var(--white)'};font-family:'DM Mono',monospace;outline:none"
-                oninput="updateRPECell('${p}','${d}',this.value)"
-                onfocus="this.select()"
-              >
-              ${isLive ? '<span style="position:absolute;top:-3px;right:-3px;width:6px;height:6px;border-radius:50%;background:#16a34a;border:1px solid #fff"></span>' : ''}
-            </div>
-            ${hasVal ? `<span id="rpeTLCell_${p.replace(/[^a-z0-9]/gi,'_')}_${d.replace(/[^a-z0-9]/gi,'_')}" style="font-size:8px;color:var(--gray-400);font-family:'DM Mono',monospace">${entry.tl||0}</span>` : `<span id="rpeTLCell_${p.replace(/[^a-z0-9]/gi,'_')}_${d.replace(/[^a-z0-9]/gi,'_')}"></span>`}
+        const cellBody = is2xG
+          ? ssG.map((s,i) => `<div style="font-size:10px;font-family:'DM Mono',monospace;font-weight:700;color:${s.rpe>=8?'#dc2626':s.rpe>=6?'#d97706':'#0891b2'}">${s.rpe}<sup style="font-size:7px">${i===0?'M':'P'}</sup></div>`).join('') +
+            `<div style="font-size:11px;font-weight:800;font-family:'DM Mono',monospace;color:${rpeCol};border-top:1px solid ${rpeCol}44">${dayRg}</div>`
+          : `<input type="number" id="${cellId}" min="0" max="10" step="1" value="${hasVal?dayRg:''}" placeholder="—" ${player.stato==='Infortunato'?'disabled':''}
+              style="width:46px;text-align:center;padding:4px 2px;border:1.5px solid ${hasVal?rpeCol:'var(--gray-200)'};border-radius:6px;font-size:13px;font-weight:${hasVal?'700':'400'};color:${hasVal?rpeCol:'var(--gray-400)'};background:${hasVal?rpeCol+'11':'var(--white)'};font-family:'DM Mono',monospace;outline:none"
+              oninput="updateRPECell('${p}','${d}',this.value)" onfocus="this.select()">`;
+        return `<td style="padding:4px 6px;text-align:center;border-bottom:1px solid var(--gray-100);${is2xG?'background:#f5f0ff':''}" title="${is2xG?ssG.map((s,i)=>[(i===0?'M':'P')+':'+s.rpe]).join('+')+'='+dayRg:''}">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:1px;position:relative">
+            ${isLive&&!is2xG?'<span style="position:absolute;top:-3px;right:-3px;width:6px;height:6px;border-radius:50%;background:#16a34a;border:1px solid #fff"></span>':''}
+            ${cellBody}
+            <span id="rpeTLCell_${p.replace(/[^a-z0-9]/gi,'_')}_${d.replace(/[^a-z0-9]/gi,'_')}" style="font-size:8px;color:var(--gray-400);font-family:'DM Mono',monospace">${hasVal?dayTg:''}</span>
+            ${is2xG?'<span style="font-size:7px;background:#7c3aed22;color:#7c3aed;border-radius:3px;padding:0 3px;font-weight:700">2x</span>':''}
           </div>
         </td>`;
       }).join('')}
