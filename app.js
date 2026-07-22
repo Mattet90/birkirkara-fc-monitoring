@@ -103,7 +103,7 @@ function init() {
   } else {
     // Assicura che i giocatori della rosa abbiano dati di monitoraggio
     PLAYERS().forEach(p => {
-      if (!S.rpeData[p]) { S.rpeData[p] = {}; S.rpeSrc[p] = {}; DAYS.forEach(d => { S.rpeData[p][d]={rpe:0,min:0,tl:0}; S.rpeSrc[p][d]='demo'; }); }
+      if (!S.rpeData[p]) { S.rpeData[p] = {}; S.rpeSrc[p] = {}; DAYS.forEach(d => { S.rpeData[p][d] = []; S.rpeSrc[p][d] = 'demo'; }); }
       if (!S.fcData[p])   S.fcData[p]  = {z5:0,z4:0,z3:0,z2:0,z1:0,tl:0};
       if (!S.wellData[p]) { S.wellData[p]={sleep:3,muscle:3,fatigue:3,stress:3,motivation:3,hi:15}; S.wellSrc[p]='demo'; }
     });
@@ -123,7 +123,8 @@ function generateDemoData() {
     S.rpeSrc[p]  = {};
     DAYS.forEach(d => {
       const r = rv(4,9), m = rv(45,100);
-      S.rpeData[p][d] = {rpe:rnd(r), min:Math.round(m), tl:Math.round(r*m)};
+      // Formato array (compatibile con doppia seduta)
+      S.rpeData[p][d] = [{rpe:Math.round(r), min:Math.round(m), tl:Math.round(r*m), sessType:'Allenamento', src:'demo', date:''}];
       S.rpeSrc[p][d]  = 'demo';
     });
     S.fcData[p] = {
@@ -475,7 +476,7 @@ function resetAllData() {
   PLAYERS().forEach(p => {
     S.rpeData[p]  = {};
     S.rpeSrc[p]   = {};
-    DAYS.forEach(d => { S.rpeData[p][d]={rpe:0,min:0,tl:0}; S.rpeSrc[p][d]='demo'; });
+    DAYS.forEach(d => { S.rpeData[p][d] = []; S.rpeSrc[p][d] = 'demo'; });
     S.fcData[p]   = {z5:0,z4:0,z3:0,z2:0,z1:0,tl:0};
     S.wellData[p] = {sleep:3,muscle:3,fatigue:3,stress:3,motivation:3,hi:15};
     S.wellSrc[p]  = 'demo';
