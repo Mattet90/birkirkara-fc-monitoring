@@ -627,7 +627,14 @@ tbody tr:nth-child(even):hover td { background: var(--primary-l); }
         <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(245,197,24,.3)">
           <div style="font-size:11px;font-weight:700;color:var(--primary-d);text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px">Sessione corrente</div>
           <div class="form-grid">
-            <div class="form-group"><label>Tipo sessione</label><select id="sessType"><option>Allenamento</option><option>Partita</option><option>Amichevole</option><option>Test fisico</option></select></div>
+            <div class="form-group"><label>Tipo sessione</label><select id="sessType">
+              <option value="Allenamento">Allenamento</option>
+              <option value="Doppia seduta - Mattina">Doppia seduta 🌅 Mattina</option>
+              <option value="Doppia seduta - Pomeriggio">Doppia seduta 🌆 Pomeriggio</option>
+              <option value="Partita">Partita</option>
+              <option value="Amichevole">Amichevole</option>
+              <option value="Test fisico">Test fisico</option>
+            </select></div>
             <div class="form-group"><label>Data</label><input type="date" id="sessDate"></div>
             <div class="form-group"><label>Giorno MD</label><select id="sessMD"><option>MD+1</option><option>MD+2</option><option>MD+3</option><option>MD-3</option><option>MD-2</option><option>MD-1</option><option>MD</option></select></div>
             <div class="form-group">
